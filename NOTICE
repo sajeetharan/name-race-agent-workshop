@@ -1,0 +1,6 @@
+Name Race Agent Workshop
+Licensed under Apache-2.0.
+
+HTTP, stdio MCP and bounded native Gemini patterns adapted from the public
+sajeetharan/guess-number-agent-workshop reference, also licensed under Apache-2.0.
+Race rules, live room flow and phone registration are specific to this workshop.

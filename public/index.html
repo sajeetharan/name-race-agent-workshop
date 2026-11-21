@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Name Race | Join. Watch. Cheer.</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
+<body>
+<main>
+  <header><span class="eyebrow">BUILD WITH AI / LIVE WORKSHOP</span><span id="mode" class="pill">Connecting...</span>
+    <h1>Your name.<br><em>Your moment.</em></h1><p>Join the room. Watch the race. Cheer for your nickname.</p>
+    <nav aria-label="Workshop concepts"><span>Vibe coding</span><span>Skills</span><span>MCP</span><span>Human control</span></nav>
+  </header>
+  <p id="error" role="alert" hidden></p>
+  <section id="login" class="card" hidden><h2>Host login</h2><p>The host password stays private. Participants do not need it.</p>
+    <form id="login-form"><label for="password">Host password</label><input id="password" type="password" autocomplete="current-password" required><button>Unlock host controls</button></form>
+  </section>
+  <section id="create" class="card" hidden><h2>Ready for the room?</h2><p>Up to 120 nicknames. One random winner. Everyone has an equal chance per entry.</p><button id="create-room">Create race room</button></section>
+  <div id="game" hidden>
+    <section id="invite-card" class="card invite" hidden><div><span class="eyebrow">01 / INVITE THE AUDIENCE</span><h2>Scan. Join. Cheer.</h2>
+      <p>No account, email or real name needed.</p><a id="invite-link" target="_blank" rel="noopener"></a><p class="small">Share only this join link. Never share your host password.</p></div>
+      <img id="qr" alt="QR code: scan to join this race" width="240" height="240">
+    </section>
+    <section id="join-card" class="card" hidden><span class="eyebrow">01 / TAKE YOUR PLACE</span><h2>What's your nickname?</h2>
+      <form id="join-form"><label for="nickname">Nickname</label><input id="nickname" autocomplete="off" placeholder="For example: Blue Panda" required>
+        <p class="small">1-24 letters or numbers; spaces, dots, underscores and hyphens are fine.</p>
+        <label class="consent"><input id="consent" type="checkbox" required><span>I agree to show this nickname to the room. Please do not use private information. Rooms expire after two hours.</span></label>
+        <button>Join the race</button></form>
+    </section>
+    <section class="card arena"><div class="arena-heading"><div><span class="eyebrow">02 / THE LIVE TRACK</span><h2 id="room-title" tabindex="-1">Name Race</h2></div><span id="count" class="pill"></span></div>
+      <p id="status" role="status" aria-live="polite"></p><div id="winner" class="winner" hidden></div>
+      <div id="your-racer" hidden><h3>Your racer</h3><div id="your-track"></div></div>
+      <h3 id="track-label">Latest arrivals</h3><p class="small">The big screen shows up to 12 racers. Every registered entry can win, including names not shown here.</p>
+      <div id="tracks" class="tracks"></div>
+      <div id="host-controls" class="controls" hidden><button id="start">Review &amp; start race</button><button id="reset" class="secondary">Open next round</button><button id="delete" class="secondary">Delete room</button></div>
+      <details id="roster"><summary>All nicknames / host moderation</summary><ul id="names"></ul></details>
+    </section>
+    <section id="commentator" class="card" hidden><span class="eyebrow">03 / THE OPTIONAL AGENT</span><h2>A small, bounded commentator</h2>
+      <p>Only anonymous racer labels reach the model. It cannot pick a winner, start a race or change names.</p><button id="comment" class="secondary">Ask AI commentator</button><p id="commentary" role="status">AI is optional. The game works without it.</p>
+    </section>
+    <details class="card"><summary>Real MCP call / result trace</summary><p class="small">Human actions and agent reads are labeled separately. Credentials are never shown.</p><pre id="trace">Run an action to see its actual tools.</pre></details>
+  </div>
+  <footer>Code picks the finish order randomly. The race visualizes it; tapping does not change the odds.<br>One browser entry per room, not verified real-person identity. The host can remove duplicate or unsuitable entries.</footer>
+</main>
+<dialog id="review"><form id="review-form"><h2 id="review-title">Review action</h2><p id="review-copy"></p><label for="confirmation">Type <strong id="required-word"></strong> to confirm</label>
+  <input id="confirmation" autocomplete="off" required><div class="controls"><button id="confirm-action">Confirm</button><button type="button" id="cancel" class="secondary">Cancel</button></div></form></dialog>
+</body></html>

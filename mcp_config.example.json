@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "name-race-guide": {
+      "command": "node",
+      "args": ["C:\\YOUR_WORKSPACE\\name-race-agent-workshop\\src\\mcp.ts", "--guide"]
+    }
+  }
+}

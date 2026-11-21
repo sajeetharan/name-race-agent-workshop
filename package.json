@@ -1,0 +1,29 @@
+{
+  "name": "name-race-agent-workshop",
+  "version": "1.0.0",
+  "description": "Live nickname races: phone registration, Skills, real MCP and a bounded AI commentator.",
+  "private": true,
+  "engines": { "node": ">=24.13.0", "npm": ">=11" },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test src/race.test.ts src/server.test.ts src/agent.test.ts",
+    "check": "npm run build && npm test && node --check public/app.js",
+    "dev": "node src/server.ts",
+    "start": "node dist/server.js",
+    "mcp:guide": "node src/mcp.ts --guide"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^7.0.2"
+  }
+}
