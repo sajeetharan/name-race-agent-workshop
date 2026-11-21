@@ -27,7 +27,7 @@ Do not expose that local configuration through a tunnel.
 1. Open the live host URL before sharing your screen.
 2. In Azure Portal, open **your game app > Environment variables > HOST_PASSWORD**.
    Copy the value privately into the host login. Never show it in a recording.
-3. Click **Create race room**. Share the QR code or the visible join link.
+3. Click **Create race room**. Share the QR code; the host invite card does not display the join URL.
 4. Participants enter nicknames and consent to display them. No email or real name is needed.
 5. Review the names. Remove unsuitable entries before starting.
 6. Click **Review & start race**, review the count, and type **START**.

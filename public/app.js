@@ -182,7 +182,6 @@ function render() {
     ? 'Ranking uses correct answers first, then total time for correct answers. Time is recorded by the server and includes network and polling delay. Exact score/time ties share a rank.'
     : 'This previous room uses a random finish order. Reset keeps the nicknames and upgrades it to the five-question quiz.';
   show('invite-card', host && room.phase === 'waiting');
-  $('invite-link').textContent = `${location.origin}/r/${room.code}`; $('invite-link').href = `${location.origin}/r/${room.code}`;
   const qrPath = `/api/qr/${room.code}`; if (host && $('qr').getAttribute('src') !== qrPath) $('qr').src = qrPath;
   show('join-card', Boolean(guest && !state.you && room.phase === 'waiting'));
   show('host-controls', host); show('commentator', host); $('comment').disabled = busy || !meta.ai;
