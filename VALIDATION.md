@@ -19,7 +19,10 @@ model access and guide/Skill discovery; errors do not become hidden fallbacks.
   These are rehearsal measurements, not a shared-plan performance guarantee.
 - Browser nickname entry, cookie identity after reload, live count, real winner,
   and winner persistence passed. No horizontal overflow at 375, 768, 1024 or 1440 px.
-- Live QR endpoint returns PNG. Phone join URL uses the canonical HTTPS host.
+- Live QR PNG is byte-identical to a QR generated for the canonical HTTPS join URL.
+- Reduced-motion regression passed through a second real race: progress stays at
+  zero while running, then jumps once to 100 at finish. Host login is masked,
+  keyboard reachable, and its button is 48.8 px high.
 - Synthetic test rooms are deleted after rehearsal. Create a fresh room shortly
   before the session: its two-hour lifetime starts when it is created.
 
