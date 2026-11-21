@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { codeSchema, FileRepository, keySchema, nicknameSchema, RaceError, RaceStore, versionSchema } from './race.ts';
+import { choiceSchema, codeSchema, FileRepository, hostActionSchema, keySchema, nicknameSchema, questionIndexSchema, RaceError, RaceStore, versionSchema } from './race.ts';
 
 export function createRaceMcp(store: RaceStore, authority: string, guide = false) {
   const server = new McpServer({ name: guide ? 'name-race-guide' : 'name-race', version: '1.0.0' });
@@ -21,7 +21,7 @@ export function createRaceMcp(store: RaceStore, authority: string, guide = false
   }
   if (guide) {
     server.registerTool('get_game_rules', { inputSchema: {}, annotations: { readOnlyHint: true } }, () => output({
-      rules: '120 nicknames per room. Phone joining. Host reviews START. Code uniformly shuffles racers. Eight-second race. Host alone reopens or deletes a room.',
+      rules: '120 nicknames per room. Five workshop questions. Host reviews START, CLOSE and NEXT. Each correct answer earns 100 points and moves a car. Total correct-answer receipt time breaks score ties. Final top three appear on the podium. Host alone reopens or deletes a room.',
       privacy: 'No email or real name needed. Only anonymous racer labels reach an optional AI commentator.',
     }));
     server.registerTool('get_build_steps', { inputSchema: {}, annotations: { readOnlyHint: true } }, () => output({
@@ -39,8 +39,15 @@ export function createRaceMcp(store: RaceStore, authority: string, guide = false
   }));
   server.registerTool('join_room', { inputSchema: { code: codeSchema, name: nicknameSchema, viewerKey: keySchema, consent: z.literal(true) } },
     args => execute(() => store.join(args.code, args.name, args.viewerKey, args.consent)));
+  server.registerTool('submit_answer', { inputSchema: { code: codeSchema, viewerKey: keySchema,
+    round: versionSchema, questionIndex: questionIndexSchema, choice: choiceSchema,
+    receivedAt: z.number().nonnegative().optional(), authority: keySchema } },
+    args => execute(async () => {
+      authorize(args.authority);
+      return store.answer(args.code, args.viewerKey, args.round, args.questionIndex, args.choice, args.receivedAt);
+    }));
   server.registerTool('host_control', { inputSchema: { code: codeSchema, expectedVersion: versionSchema,
-    confirmation: z.enum(['START', 'RESET', 'REMOVE']), playerId: z.uuid().optional(), authority: keySchema } }, args => execute(async () => {
+    confirmation: hostActionSchema, playerId: z.uuid().optional(), authority: keySchema } }, args => execute(async () => {
     authorize(args.authority); return store.control(args.code, args.expectedVersion, args.confirmation, args.playerId);
   }));
   server.registerTool('delete_room', { inputSchema: { code: codeSchema, expectedVersion: versionSchema, confirmation: z.literal('DELETE'), authority: keySchema } },

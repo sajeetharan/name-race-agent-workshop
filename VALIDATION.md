@@ -1,38 +1,56 @@
 # Validation and limits
 
-Local checks cover TypeScript, browser JavaScript syntax, 120 concurrent joins,
-duplicate/stale/full-room guards, actual stdio MCP calls, persistent reconnect,
-private proof removal, anonymous agent inputs, authorization, host/guest HTTP,
-origin/Host validation, assets, QR output and the exact 8192/8193-byte boundary.
+## Current five-question quiz
+
+- Strict build, browser JavaScript syntax and all ten tests pass on Node 26 and
+  the minimum supported Node 24.13.
+- Tests cover one racer, 120 concurrent registrations and real MCP answers,
+  score-first/time-second ranking, exact ties, one-shot/idempotent answers,
+  stale rounds, closed questions, private grades, reconnect and legacy room files.
+- HTTP tests reject unjoined answers, forged phone timestamps, unauthorized host
+  controls, invalid Host/Origin, and the exact 8193-byte body boundary.
+  Server receipt timestamps exclude queued storage processing time.
+- A real four-player browser rehearsal completed all five questions. A phone
+  retained its saved answer after reload; its car progressed 20/40/60/80/100%.
+  Review cancel restored focus, four car colors were distinct, and the named
+  top-three podium ranked equal scores by actual answer time.
+- No horizontal overflow at 375, 768, 1024 or 1440 px. Reduced motion disables
+  car transitions without hiding earned progress or the final result.
+- Current compiled quiz files deployed to the existing HTTPS Azure app.
+  A live test registered 120 synthetic entries, rejected entry 121, accepted
+  600 answers across all five questions, verified every final score, and
+  produced 120 distinct car hues and a real named podium.
+- A burst of 120 full, completed-quiz reads measured 1,898 ms p95 and 1,972 ms
+  maximum. This is a rehearsal measurement, not a shared-plan guarantee.
 
 No live Gemini request or Antigravity host configuration was performed.
-The model tests use a scripted provider with real MCP. Rehearse your own key,
+Model tests use a scripted provider with real MCP. Rehearse your own key,
 model access and guide/Skill discovery; errors do not become hidden fallbacks.
+The commentator receives anonymous labels, not participant names or answers.
 
-## Azure and browser rehearsal
+## Operational limits
 
-- Prebuilt release deployed successfully; HTTPS `/healthz` checks the real MCP broker.
-- Host login verified privately. Unauthenticated host control returns 403;
-  registration without consent returns 400.
-- Solo start verified on live Azure: one entry runs for eight seconds and wins;
-  the browser renders its result without errors. Empty-room start still returns 409.
-  All nine local tests pass, including the solo timing boundary and multiplayer guards.
-- Registered 120 synthetic entries on the live service; entry 121 returns 409.
-  A burst of 120 full-room reads had 1,394 ms p95 and 1,787 ms maximum latency.
-  These are rehearsal measurements, not a shared-plan performance guarantee.
-- Browser nickname entry, cookie identity after reload, live count, real winner,
-  and winner persistence passed. No horizontal overflow at 375, 768, 1024 or 1440 px.
-- Live QR PNG is byte-identical to a QR generated for the canonical HTTPS join URL.
-- Reduced-motion regression passed through a second real race: progress stays at
-  zero while running, then jumps once to 100 at finish. Host login is masked,
-  keyboard reachable, and its button is 48.8 px high.
-- Synthetic test rooms are deleted after rehearsal. Create a fresh room shortly
-  before the session: its two-hour lifetime starts when it is created.
+Scores become visible when the host closes a question. The API does not reveal
+the current answer key or grade while it is open. Questions and answers remain
+public in this teaching repository: this is not a proctored or abuse-proof exam.
+Response timing includes network and polling delay. Exact score/time ties share
+a rank; the podium displays the first three ranked entries.
 
 The file store requires one runtime owner. Atomic writes preserve committed data,
-but are not a distributed lock. Use one app instance, and do not deploy during a race.
+but are not a distributed lock. Use one app instance and do not deploy mid-quiz.
+Previous waiting rooms upgrade at START; completed random rooms upgrade at RESET
+without losing names. Synthetic rehearsal rooms are deleted after verification.
+Create a fresh room near the session: its two-hour lifetime starts at creation.
+
 One browser entry is not one verified person. This is a public nickname workshop,
-not an authenticated multiplayer platform, a gambling product or an abuse-proof service.
+not an authenticated multiplayer platform or a gambling product.
+
+## Earlier random-race checks
+
+Before the quiz revision, the same service passed private host login, consent,
+source isolation, cookie identity/reload, random race result persistence and a
+live QR PNG byte comparison against the canonical HTTPS join URL. Those earlier
+race timing measurements do not describe the new quiz scoring.
 
 ```powershell
 npm run check

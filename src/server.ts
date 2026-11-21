@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 import { z } from 'zod';
 import { connectRace } from './connection.ts';
 import type { RaceConnection } from './connection.ts';
-import { codeSchema, keySchema, nicknameSchema, outcomeSchema, RaceError, versionSchema } from './race.ts';
+import { choiceSchema, codeSchema, hostActionSchema, keySchema, nicknameSchema, outcomeSchema, questionIndexSchema, RaceError, versionSchema } from './race.ts';
 import { createCommentator, geminiProvider } from './agent.ts';
 import type { Commentator } from './agent.ts';
 
@@ -92,6 +92,13 @@ export function createRaceServer(connection: RaceConnection, config: Config = {}
         const outcome = await connection.call('join_room', { ...args, viewerKey: key }, outcomeSchema);
         json(200, outcome); return;
       }
+      if (path === '/api/answer') {
+        const args = z.object({ code: codeSchema, round: versionSchema, questionIndex: questionIndexSchema, choice: choiceSchema }).strict().parse(input);
+        const key = cookie(request, `nr_${args.code}`);
+        if (!key) throw new RaceError('PLAYER', 'Join this room before answering.', 403);
+        keySchema.parse(key);
+        json(200, await connection.call('submit_answer', { ...args, viewerKey: key, receivedAt: Date.now() }, outcomeSchema)); return;
+      }
       hostOnly();
       if (path === '/api/create') {
         z.object({}).strict().parse(input);
@@ -99,7 +106,7 @@ export function createRaceServer(connection: RaceConnection, config: Config = {}
         json(200, { ...outcome, joinUrl: `${origin}/r/${outcome.result.room.code}` }); return;
       }
       if (path === '/api/control') {
-        const args = z.object({ code: codeSchema, expectedVersion: versionSchema, confirmation: z.enum(['START', 'RESET', 'REMOVE']), playerId: z.uuid().optional() }).strict().parse(input);
+        const args = z.object({ code: codeSchema, expectedVersion: versionSchema, confirmation: hostActionSchema, playerId: z.uuid().optional() }).strict().parse(input);
         json(200, await connection.call('host_control', args, outcomeSchema)); return;
       }
       if (path === '/api/delete') {

@@ -1,54 +1,81 @@
-# Name Race: easy-English live demo
+# Name Race: five-question workshop quiz
 
 ## Prepare
 
-Open the live app. Log in privately. Create a fresh room. Keep the QR code ready.
-Do not show the Azure password page. Use nicknames, not private information.
-The game needs no model key. Keep a local fallback ready if the network fails.
+Open the live host and log in privately. Create a fresh room shortly before the
+session; rooms last two hours. Share its QR code. Use nicknames, not private data.
+The quiz needs no model key. The host opens and closes each question.
 
 ## Fourteen-minute demo
 
-**0-2 minutes / Invite**
+**0-2 / Invite**
 
-"This is Name Race. Scan this code and choose a nickname. No account or email.
-Your nickname will be on the screen. Every entry has the same chance."
+"Scan this code and choose a nickname. You get a colored car. There are five
+questions about today's workshop. Correct answers move your car. Your answers
+decide the result, not luck or AI."
 
-**2-4 minutes / Vibe coding and Skill**
+Show the names and cars. Review the entries and type START.
 
-"We start with a small idea and a clear plan. The coding agent helps build the files.
-A Skill is a work recipe: read, plan, change, and test. It gives no extra permissions."
+**2-4 / Question 1: vibe coding**
 
-Show the Skill, one approved wording edit and `npm run check`.
+"What is a good first step when building with AI? Pick one answer on your phone.
+Your answer is final after you tap. We start with a clear goal and review a plan."
 
-**4-7 minutes / MCP**
+Wait for answers. Type CLOSE to reveal. Show cars moving for correct answers.
+Show the reusable Skill as a recipe: read, plan, change and test.
 
-"MCP connects the app to real tools. A phone registers through a tool.
-The host reads real names and counts. We can see the request and actual result.
-The coding guide is a different connection. It gives build steps, not room access."
+**4-6 / Question 2: Antigravity**
 
-Show the actual join/create trace. Explain that private authority and viewer keys are omitted.
+Type NEXT.
 
-**7-10 minutes / Race**
+"Antigravity helps us build and review code. It does not make every answer true,
+and it does not remove the need for tests. People still check the result."
 
-"The room is full of your nicknames. I review this action and type START.
-The code picks a random finish order. AI cannot choose who wins.
-The screen shows the leading names. Everyone can win, even names below the visible list."
+Wait for answers and type CLOSE. Show `npm run check` and one reviewed code edit.
 
-Start the race. Cheer. Read the real winner from the screen.
+**6-8 / Question 3: Skills**
 
-**10-12 minutes / Optional agent**
+Type NEXT.
 
-"A game agent is different from the coding agent. It reads an anonymous summary:
-Racer 1, Racer 2, phase, count and the real winner label. It never receives your names.
-It chooses a small commentary style. The host checks the phase and code supplies the facts."
+"A Skill is a reusable recipe for a task. It is not a password or permission to
+do anything. We use it to guide a small, safe change."
 
-If your live key was rehearsed, ask the commentator after the result is stable.
-Otherwise say: "AI is off today. These MCP calls are real, but they are not model reasoning."
+Wait and type CLOSE. Show the actual Skill file and explain its review boundary.
 
-**12-14 minutes / Human control and recap**
+**8-10 / Question 4: MCP**
 
-"Only the host can start, reopen, remove or delete. A participant cannot reset the room.
-We approve one more round with RESET. After the session I delete the room.
-Small idea, reusable Skill, connected tools, bounded agent, and proof from tests."
+Type NEXT.
 
-Finish with the public repository. Keep four minutes for Q&A in the one-hour workshop.
+"MCP connects apps and AI to real tools and data. Registration and answers use
+real MCP calls. Here is the request and actual result. Private keys are omitted."
+
+Show `submit_answer`, `read_room` and `host_control` in the trace. The coding
+guide is a separate, read-only connection. Wait and type CLOSE.
+
+**10-12 / Question 5: human control**
+
+Type NEXT.
+
+"Only the host should approve starting, closing, reopening or deleting the room.
+A participant chooses answers. The optional AI cannot grade or control the quiz."
+
+Wait and type CLOSE. Closing question five reveals the named top-three podium.
+
+**12-14 / Podium and agent recap**
+
+"These racers earned the most correct answers. Each correct answer gives 100
+points. If scores match, faster correct answers rank first. The server records
+time; network and question polling also affect it. Exact score/time ties share a rank."
+
+Read the podium names and congratulate participants. Show the score and time.
+
+"The coding agent helps build the app. The optional application agent reads an
+anonymous summary and chooses a small commentary style. It receives racer
+labels, never your nicknames, and code supplies the facts."
+
+Only call commentary if your private key and model were rehearsed. Otherwise
+say: "AI is off today. The MCP calls are real, but they are not model reasoning."
+
+Type RESET only if you want another round. It keeps names and clears scores.
+Delete the room after the session. Finish with the public repo and keep four
+minutes for Q&A in the one-hour workshop.

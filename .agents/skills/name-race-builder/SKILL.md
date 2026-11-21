@@ -6,7 +6,7 @@ description: Build and verify the small live nickname race without weakening pri
 1. Read AGENTS.md and the requested small change.
 2. State the expected behavior in easy English.
 3. Review a short plan with the user.
-4. Keep race rules in code and host permissions in the HTTP adapter.
+4. Keep five-question scoring and time tie-breaks in code, grades private until CLOSE, and host permissions/timestamps in the HTTP adapter.
 5. Use the guide MCP tools for static build context only.
 6. Make the smallest approved change.
 7. Run npm run check.

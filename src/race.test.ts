@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connectRace } from './connection.ts';
 import { FileRepository, MemoryRepository, outcomeSchema, RaceStore, summarySchema } from './race.ts';
+import { questions } from './questions.ts';
 const key = (n: number) => n.toString(16).padStart(64, '0');
 
 test('120 concurrent registrations have unique entries; the 121st fails without mutation', async () => {
@@ -19,50 +20,87 @@ test('120 concurrent registrations have unique entries; the 121st fails without 
   assert.equal(same.room.version, state.room.version);
   assert.ok(same.you); assert.ok(!JSON.stringify(same).includes('keyHash'));
 });
-test('empty rooms cannot start; one racer completes an eight-second solo race', async () => {
+test('empty rooms cannot start; one racer can answer all five host-paced questions', async () => {
   let now = 100000;
   const store = new RaceStore(new MemoryRepository(), () => now);
   let { room } = await store.create();
   await assert.rejects(store.control(room.code, room.version, 'START'), /at least one racer/);
   assert.equal((await store.read(room.code)).room.version, room.version);
   const joined = await store.join(room.code, 'Solo Panda', key(1), true);
-  room = (await store.control(room.code, joined.room.version, 'START')).room;
-  assert.equal(room.players[0]?.durationMs, 8000);
-  assert.equal(room.winnerId, null);
-  assert.ok(room.startedAt !== null);
-  now = room.startedAt + 7999;
-  assert.equal((await store.read(room.code)).room.phase, 'running');
-  now++;
-  room = (await store.read(room.code)).room;
-  assert.equal(room.phase, 'finished');
+  room = (await store.control(room.code, joined.room.controlVersion, 'START')).room;
+  for (let index = 0; index < questions.length; index++) {
+    now += 250;
+    const receivedAt = now;
+    now += 1000;
+    await store.answer(room.code, key(1), room.round, index, questions[index]!.correctChoice, receivedAt);
+    assert.equal((await store.read(room.code)).room.players[0]?.score, index * 100);
+    room = (await store.control(room.code, room.controlVersion, 'CLOSE')).room;
+    assert.equal(room.players[0]?.score, (index + 1) * 100);
+    if (index < 4) room = (await store.control(room.code, room.controlVersion, 'NEXT')).room;
+  }
+  assert.equal(room.phase, 'finished'); assert.equal(room.players[0]?.answerTimeMs, 1250);
   assert.equal(room.winnerId, joined.you);
-  room = (await store.control(room.code, room.version, 'RESET')).room;
+  room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
   assert.equal(room.phase, 'waiting');
   assert.equal(room.players.length, 1);
   assert.equal(room.players[0]?.durationMs, null);
+  assert.equal(room.players[0]?.score, 0); assert.equal(room.question, null);
+  await assert.rejects(store.answer(room.code, key(1), 1, 4, questions[4].correctChoice), /not open/);
 });
-test('names, stale controls, random finish and next-round boundaries are code owned', async () => {
+test('quiz scoring, speed ties, private answers and question boundaries are code owned', async () => {
   let now = 100000;
-  const store = new RaceStore(new MemoryRepository(), () => now, () => 0);
+  const store = new RaceStore(new MemoryRepository(), () => now);
   let { room } = await store.create();
   await store.join(room.code, 'नेपाल', key(1), true);
   room = (await store.join(room.code, 'Blue Panda', key(2), true)).room;
-  await assert.rejects(store.join(room.code, 'blue panda', key(3), true), /taken/);
-  await assert.rejects(store.join(room.code, '<script>', key(3), true));
+  room = (await store.join(room.code, 'Fast Cat', key(3), true)).room;
+  room = (await store.join(room.code, 'Tie Bird', key(4), true)).room;
+  await assert.rejects(store.join(room.code, 'blue panda', key(5), true), /taken/);
+  await assert.rejects(store.join(room.code, '<script>', key(5), true));
   await assert.rejects(store.control(room.code, 1, 'START'), /changed/);
-  room = (await store.control(room.code, room.version, 'START')).room;
+  room = (await store.control(room.code, room.controlVersion, 'START')).room;
   assert.equal(room.winnerId, null);
-  await assert.rejects(store.join(room.code, 'Late', key(3), true), /closed/);
-  await assert.rejects(store.control(room.code, room.version, 'RESET'), /Finish/);
-  now += 10500;
-  room = (await store.read(room.code)).room;
+  await assert.rejects(store.join(room.code, 'Late', key(5), true), /closed/);
+  await assert.rejects(store.control(room.code, room.controlVersion, 'RESET'), /Finish/);
+  await assert.rejects(store.control(room.code, room.controlVersion, 'NEXT'), /Close/);
+  await assert.rejects(store.answer(room.code, key(99), room.round, 0, 1), /Join/);
+  for (let index = 0; index < questions.length; index++) {
+    const start = now;
+    const correct = questions[index]!.correctChoice;
+    now = start + 50;
+    await store.answer(room.code, key(3), room.round, index, index === 4 ? (correct + 1) % 4 : correct);
+    now = start + 100;
+    const answer = await store.answer(room.code, key(2), room.round, index, correct);
+    await store.answer(room.code, key(4), room.round, index, correct);
+    assert.equal(answer.answer?.correct, null); assert.equal(answer.room.question?.correctChoice, null);
+    const revision = (await store.read(room.code)).room.version;
+    assert.equal((await store.answer(room.code, key(2), room.round, index, correct)).room.version, revision);
+    await assert.rejects(store.answer(room.code, key(2), room.round, index, (correct + 1) % 4), /cannot change/);
+    now = start + 400;
+    await store.answer(room.code, key(1), room.round, index, correct);
+    room = (await store.control(room.code, room.controlVersion, 'CLOSE')).room;
+    assert.equal((await store.read(room.code, key(2))).answer?.correct, true);
+    assert.equal((await store.read(room.code)).answer, null);
+    await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE'), /Open a question/);
+    if (index < 4) {
+      room = (await store.control(room.code, room.controlVersion, 'NEXT')).room;
+      await assert.rejects(store.answer(room.code, key(1), room.round + 1, index + 1, 0), /round changed/i);
+    }
+  }
   assert.equal(room.phase, 'finished'); assert.ok(room.winnerId);
+  const panda = room.players.find(p => p.name === 'Blue Panda')!;
+  const tie = room.players.find(p => p.name === 'Tie Bird')!;
+  const slow = room.players.find(p => p.name === 'नेपाल')!;
+  const fastWrong = room.players.find(p => p.name === 'Fast Cat')!;
+  assert.equal(panda.score, 500); assert.equal(panda.rank, 1); assert.equal(tie.rank, 1);
+  assert.equal(slow.rank, 3); assert.equal(fastWrong.score, 400); assert.equal(fastWrong.rank, 4);
+  assert.equal(new Set(room.players.map(p => p.colorHue)).size, 4);
   const winner = room.winnerId;
   assert.equal((await store.read(room.code)).room.winnerId, winner);
   const summary = await store.summary(room.code);
   assert.ok(!JSON.stringify(summary).includes('नेपाल')); assert.ok(!JSON.stringify(summary).includes('Blue Panda'));
-  room = (await store.control(room.code, room.version, 'RESET')).room;
-  assert.equal(room.phase, 'waiting'); assert.equal(room.players.length, 2); assert.equal(room.winnerId, null);
+  room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
+  assert.equal(room.phase, 'waiting'); assert.equal(room.players.length, 4); assert.equal(room.winnerId, null);
 });
 test('file-backed MCP survives reconnect, serializes joins, hides proofs and enforces host authority', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'name-race-mcp-'));
@@ -84,10 +122,37 @@ test('file-backed MCP survives reconnect, serializes joins, hides proofs and enf
     assert.equal(outcome.room.players.length, 120); assert.equal(outcome.you, read.result.you);
     const summary = await connection.call('read_race_summary', { code }, summarySchema);
     assert.equal(summary.result.count, 120); assert.ok(!JSON.stringify(summary).includes('RacerName'));
-    await connection.call('delete_room', { code, expectedVersion: outcome.room.version, confirmation: 'DELETE' },
+    outcome = (await connection.call('host_control', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'START' }, outcomeSchema)).result;
+    await Promise.all(Array.from({ length: 120 }, (_, i) => connection.call('submit_answer', {
+      code, viewerKey: key(i + 1), round: outcome.room.round, questionIndex: 0, choice: questions[0].correctChoice,
+    }, outcomeSchema)));
+    await connection.close(); connection = await connectRace(dir);
+    const answered = (await connection.call('read_room', { code, viewerKey: key(1) }, outcomeSchema)).result;
+    assert.equal(answered.room.question?.answerCount, 120); assert.equal(answered.room.players[0]?.score, 0);
+    assert.equal(answered.answer?.correct, null); assert.ok(!JSON.stringify(answered).includes('elapsedMs'));
+    outcome = (await connection.call('host_control', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'CLOSE' }, outcomeSchema)).result;
+    assert.ok(outcome.room.players.every(p => p.score === 100));
+    await connection.call('delete_room', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'DELETE' },
       (await import('zod')).z.object({ deleted: (await import('zod')).z.literal(true) }));
     await assert.rejects(readFile(join(dir, `${code}.json`)), /ENOENT/);
   } finally { await connection.close(); await rm(dir, { recursive: true, force: true }); }
+});
+test('legacy persisted rooms remain readable and reset into a quiz without losing names', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'name-race-legacy-'));
+  try {
+    const id = '00000000-0000-4000-8000-000000000001', code = 'AABBCCDD';
+    await writeFile(join(dir, `${code}.json`), JSON.stringify({
+      code, version: 4, round: 1, phase: 'running', startedAt: 1000, expiresAt: 100000,
+      winnerId: id, nextLabel: 2, players: [{ id, label: 'Racer 1', name: 'Old Racer', durationMs: 8000, keyHash: key(1) }],
+    }));
+    const store = new RaceStore(new FileRepository(dir), () => 10000);
+    const old = await store.read(code);
+    assert.equal(old.room.mode, 'legacy'); assert.equal(old.room.phase, 'finished'); assert.equal(old.room.winnerId, id);
+    const reset = await store.control(code, old.room.controlVersion, 'RESET');
+    assert.equal(reset.room.mode, 'quiz'); assert.equal(reset.room.players[0]?.name, 'Old Racer');
+    const started = await store.control(code, reset.room.controlVersion, 'START');
+    assert.equal(started.room.question?.number, 1); assert.equal(started.room.players[0]?.score, 0);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 test('corrupt persisted room fails explicitly; expired rooms cannot be read', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'name-race-file-'));

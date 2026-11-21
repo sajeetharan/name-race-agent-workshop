@@ -4,14 +4,14 @@
 <body>
 <main>
   <header><span class="eyebrow">BUILD WITH AI / LIVE WORKSHOP</span><span id="mode" class="pill">Connecting...</span>
-    <h1>Your name.<br><em>Your moment.</em></h1><p>Join the room. Watch the race. Cheer for your nickname.</p>
+    <h1>Your name.<br><em>Your answers.</em></h1><p>Five questions. Colored cars. A podium earned by you.</p>
     <nav aria-label="Workshop concepts"><span>Vibe coding</span><span>Skills</span><span>MCP</span><span>Human control</span></nav>
   </header>
   <p id="error" role="alert" hidden></p>
   <section id="login" class="card" hidden><h2>Host login</h2><p>The host password stays private. Participants do not need it.</p>
     <form id="login-form"><label for="password">Host password</label><input id="password" type="password" autocomplete="current-password" required><button>Unlock host controls</button></form>
   </section>
-  <section id="create" class="card" hidden><h2>Ready for the room?</h2><p>Up to 120 nicknames. One random winner. Everyone has an equal chance per entry.</p><button id="create-room">Create race room</button></section>
+  <section id="create" class="card" hidden><h2>Ready for the room?</h2><p>Up to 120 nicknames. Five workshop questions. Correct answers move your car; faster correct answers break score ties.</p><button id="create-room">Create race room</button></section>
   <div id="game" hidden>
     <section id="invite-card" class="card invite" hidden><div><span class="eyebrow">01 / INVITE THE AUDIENCE</span><h2>Scan. Join. Cheer.</h2>
       <p>No account, email or real name needed.</p><a id="invite-link" target="_blank" rel="noopener"></a><p class="small">Share only this join link. Never share your host password.</p></div>
@@ -23,10 +23,20 @@
         <label class="consent"><input id="consent" type="checkbox" required><span>I agree to show this nickname to the room. Please do not use private information. Rooms expire after two hours.</span></label>
         <button>Join the race</button></form>
     </section>
+    <section id="question-card" class="card question-card" hidden>
+      <div class="arena-heading"><span id="question-number" class="eyebrow"></span><span id="question-count" class="pill"></span></div>
+      <h2 id="question-title" tabindex="-1"></h2>
+      <p id="answer-help" class="small">Choose one answer. Once saved, it cannot change. Correct answers earn 100 points.</p>
+      <div id="answer-options" class="answer-options" role="group" aria-labelledby="question-title" aria-describedby="answer-help"></div>
+      <p id="answer-feedback" class="answer-feedback" role="status"></p>
+      <p id="explanation" hidden></p>
+      <div id="question-controls" class="controls" hidden><button id="close-question">Close answers &amp; reveal</button><button id="next-question" class="secondary">Open next question</button></div>
+    </section>
     <section class="card arena"><div class="arena-heading"><div><span class="eyebrow">02 / THE LIVE TRACK</span><h2 id="room-title" tabindex="-1">Name Race</h2></div><span id="count" class="pill"></span></div>
       <p id="status" role="status" aria-live="polite"></p><div id="winner" class="winner" hidden></div>
+      <section id="podium-section" hidden aria-labelledby="podium-title"><h3 id="podium-title">The top racers</h3><p id="podium-announcement" role="status"></p><div id="podium" class="podium"></div></section>
       <div id="your-racer" hidden><h3>Your racer</h3><div id="your-track"></div></div>
-      <h3 id="track-label">Latest arrivals</h3><p class="small">The big screen shows up to 12 racers. Every registered entry can win, including names not shown here.</p>
+      <h3 id="track-label">Latest arrivals</h3><p class="small">The big screen shows up to 12 cars. All 120 entries count. Each correct answer moves your car 20% of the track.</p>
       <div id="tracks" class="tracks"></div>
       <div id="host-controls" class="controls" hidden><button id="start">Review &amp; start race</button><button id="reset" class="secondary">Open next round</button><button id="delete" class="secondary">Delete room</button></div>
       <details id="roster"><summary>All nicknames / host moderation</summary><ul id="names"></ul></details>
@@ -36,7 +46,7 @@
     </section>
     <details class="card"><summary>Real MCP call / result trace</summary><p class="small">Human actions and agent reads are labeled separately. Credentials are never shown.</p><pre id="trace">Run an action to see its actual tools.</pre></details>
   </div>
-  <footer>Code picks the finish order randomly. The race visualizes it; tapping does not change the odds.<br>One browser entry per room, not verified real-person identity. The host can remove duplicate or unsuitable entries.</footer>
+  <footer><span id="rules">Ranking uses correct answers first, then total time for correct answers. Time is recorded by the server and includes network delay. Exact score/time ties share a rank.</span><br>One browser entry per room, not verified real-person identity. This open-source workshop quiz is not a proctored exam. The host can remove unsuitable entries.</footer>
 </main>
 <dialog id="review"><form id="review-form"><h2 id="review-title">Review action</h2><p id="review-copy"></p><label for="confirmation">Type <strong id="required-word"></strong> to confirm</label>
   <input id="confirmation" autocomplete="off" required><div class="controls"><button id="confirm-action">Confirm</button><button type="button" id="cancel" class="secondary">Cancel</button></div></form></dialog>

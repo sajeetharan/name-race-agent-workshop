@@ -42,11 +42,11 @@ export function createCommentator(connection: RaceConnection, provider: Provider
         const choice = z.object({ phase: z.enum(['waiting', 'running', 'finished']), style: z.enum(['calm', 'excited']) }).strict().parse(JSON.parse(text));
         if (choice.phase !== summary.phase) throw new RaceError('MODEL_FACT', 'The model described a different race phase.');
         const latest = (await connection.call('read_race_summary', { code }, summarySchema)).result;
-        if (latest.phase !== summary.phase || latest.round !== summary.round || latest.count !== summary.count ||
-          latest.winnerLabel !== summary.winnerLabel) throw new RaceError('STALE_COMMENTARY', 'The race changed while the model replied. Ask again.');
+        if (JSON.stringify(latest) !== JSON.stringify(summary)) throw new RaceError('STALE_COMMENTARY', 'The race changed while the model replied. Ask again.');
         const fact = summary.phase === 'waiting' ? `${summary.count} racer${summary.count === 1 ? '' : 's'} waiting. The host starts the race.`
-          : summary.phase === 'running' ? `${summary.count} racers are on the track. Watch the finish line.`
-            : `${summary.winnerLabel} wins round ${summary.round}. Code picked the finish order, not AI.`;
+          : summary.phase === 'running' ? `${summary.count} racers are on the track.${summary.mode === 'quiz' ? ` Question ${summary.questionNumber} is ${summary.questionClosed ? 'closed' : 'open'}. Correct answers move the cars.` : ' Watch the finish line.'}`
+            : summary.winnerLabel ? `${summary.winnerLabel} leads round ${summary.round}. ${summary.mode === 'quiz' ? 'Correct answers and answer time decide the ranks, not AI.' : 'Code picked the finish order, not AI.'}`
+              : `Round ${summary.round} is finished. No correct answers were recorded.`;
         return { reply: (choice.style === 'excited' ? 'Here we go! ' : '') + fact, trace };
       }
       if (summary || calls.length !== 1) throw new RaceError('TOOL_LIMIT', 'Only one read is allowed per commentary.');

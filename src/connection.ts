@@ -20,7 +20,7 @@ export async function connectRace(directory: string, guide = false) {
   try { tools = (await client.listTools()).tools; } catch (error) { await client.close(); throw error; }
   let pending: Promise<void> = Promise.resolve();
   async function call<T extends z.ZodType>(name: string, args: Record<string, unknown>, schema: T, source: Trace['source'] = 'Human -> MCP') {
-    const actual = ['create_room', 'host_control', 'delete_room'].includes(name) ? { ...args, authority } : args;
+    const actual = ['create_room', 'host_control', 'delete_room', 'submit_answer'].includes(name) ? { ...args, authority } : args;
     const visible = Object.fromEntries(Object.entries(args).filter(([key]) => key !== 'viewerKey' && key !== 'authority'));
     const trace: Trace[] = [{ source, kind: 'call', tool: name, data: visible }];
     // Ordered writes avoid concurrent stdio backpressure listeners during audience joins.

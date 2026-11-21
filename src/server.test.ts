@@ -30,7 +30,8 @@ test('separate guest/host flows enforce login, consent, origin, source isolation
     const join = await post('/api/join', { code, name: 'Green Bird', consent: true });
     const viewerCookie = join.headers.get('set-cookie')?.split(';')[0]; assert.ok(viewerCookie);
     const first = await join.json(); assert.ok(first.result.you);
-    await post('/api/join', { code, name: 'Orange Cat', consent: true });
+    const orange = await post('/api/join', { code, name: 'Orange Cat', consent: true });
+    const orangeCookie = orange.headers.get('set-cookie')?.split(';')[0]; assert.ok(orangeCookie);
     const stateResponse = await fetch(`${origin}/api/room/${code}`, { headers: { Cookie: viewerCookie } });
     const state = await stateResponse.json(); assert.equal(state.result.you, first.result.you);
     assert.equal((await fetch(`${origin}/api/room/${code}`, { headers: { Cookie: viewerCookie, 'If-None-Match': stateResponse.headers.get('etag') ?? '' } })).status, 304);
@@ -49,7 +50,24 @@ test('separate guest/host flows enforce login, consent, origin, source isolation
     const boundary = (size: number) => fetch(`${origin}/api/create`, { method: 'POST',
       headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: hostCookie }, body: '{}' + ' '.repeat(size - 2) });
     assert.equal((await boundary(8192)).status, 200); assert.equal((await boundary(8193)).status, 413);
-    assert.equal((await post('/api/control', control, hostCookie)).status, 200);
+    const started = await post('/api/control', control, hostCookie); assert.equal(started.status, 200);
+    const running = await started.json();
+    const answer = { code, round: running.result.room.round, questionIndex: 0, choice: 1 };
+    assert.equal((await post('/api/answer', answer)).status, 403);
+    assert.equal((await post('/api/answer', { ...answer, receivedAt: 0 }, viewerCookie)).status, 400);
+    assert.equal((await post('/api/answer', { ...answer, choice: 4 }, viewerCookie)).status, 400);
+    const submitted = await post('/api/answer', answer, viewerCookie); assert.equal(submitted.status, 200);
+    const privateResult = await submitted.json();
+    assert.equal(privateResult.result.answer.correct, null); assert.equal(privateResult.result.room.question.correctChoice, null);
+    assert.equal(privateResult.result.room.players[0].score, 0);
+    const closed = await post('/api/control', { code, expectedVersion: running.result.room.controlVersion, confirmation: 'CLOSE' }, hostCookie);
+    assert.equal(closed.status, 200);
+    const revealed = await closed.json(); assert.equal(revealed.result.room.players[0].score, 100);
+    assert.equal((await post('/api/answer', answer, orangeCookie)).status, 409);
+    const personal = await (await fetch(`${origin}/api/room/${code}`, { headers: { Cookie: viewerCookie } })).json();
+    assert.equal(personal.result.answer.correct, true);
+    const publicState = await (await fetch(`${origin}/api/room/${code}`)).json(); assert.equal(publicState.result.answer, null);
+    assert.equal((await post('/api/control', { code, expectedVersion: revealed.result.room.controlVersion, confirmation: 'NEXT' }, hostCookie)).status, 200);
     assert.equal((await post('/api/join', { code, name: 'Late Racer', consent: true })).status, 409);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await connection.close(); await rm(dir, { recursive: true, force: true }); }
 });

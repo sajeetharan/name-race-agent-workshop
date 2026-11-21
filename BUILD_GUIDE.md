@@ -2,12 +2,17 @@
 
 1. **Write the brief.**
    "Build a live Name Race. Phones join by QR code and nickname. Up to 120 entries.
-   The host reviews and starts. Code picks a random winner. Do not send names to AI."
+   Use five workshop questions. The host opens and closes each question.
+   Correct answers move colored cars. Rank by score, then correct-answer time.
+   Announce the top three names on a podium. Do not send names to AI."
 2. **Review the plan.**
    "Read AGENTS.md. Show the files, data flow, permissions and checks before editing."
-3. **Build the rules.** Read `src/race.ts`: registration, versions, fair shuffle,
-   persistence, expiry and public snapshots. Run `npm test`.
-4. **Build the screens.** Read `public/`: phone form, QR invite, race and review dialog.
+3. **Build the rules.** Read `src/questions.ts` and `src/race.ts`: one-shot answers,
+   score/time ranking, private grades, persistence, expiry and public snapshots.
+   Answer receipts increment the read version; host commands use `controlVersion`
+   so incoming answers do not invalidate a reviewed CLOSE. Run `npm test`.
+4. **Build the screens.** Read `public/`: phone answers, QR invite, colored cars,
+   podium and review dialog.
    Check two separate browsers, small screens, keyboard controls and reduced motion.
 5. **Use the Skill.** Ask your coding agent to use `name-race-builder` for one small
    approved wording change. Check actual host discovery; a file alone does not prove loading.
@@ -16,6 +21,8 @@
    This guide cannot read or change a running room.
 7. **Inspect real runtime MCP.** See `src/mcp.ts` and the visible call/result trace.
    The HTTP adapter validates the host; its private broker authority never reaches the browser.
+   `submit_answer` uses the participant's cookie proof and a private server timestamp.
+   The model never receives this tool, proof or timestamp authority.
 8. **Build a bounded agent.** Read `src/agent.ts`. The model gets only
    `read_race_summary`, once, for the selected room. It returns a validated style
    and actual phase. Code supplies all factual words. No participant names are sent.

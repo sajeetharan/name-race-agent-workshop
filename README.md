@@ -1,7 +1,9 @@
 # Name Race: join, watch, cheer
 
 A small live Build with AI workshop. Participants scan a QR code, enter a nickname,
-and watch a random eight-second race. **120 entries per room. No ADK needed.**
+and answer five easy-English workshop questions. Correct answers move their
+colored cars; the top three racers appear on a named podium.
+**120 entries per room. No ADK or model key needed.**
 
 **Live host:** https://name-race-e9a2-261121.azurewebsites.net
 
@@ -29,14 +31,28 @@ Do not expose that local configuration through a tunnel.
 4. Participants enter nicknames and consent to display them. No email or real name is needed.
 5. Review the names. Remove unsuitable entries before starting.
 6. Click **Review & start race**, review the count, and type **START**.
-7. Cheer for eight seconds. Code chooses a uniform random finish order, not AI or tapping.
-8. Type **RESET** to reopen the same room for another round.
-9. Type **DELETE** after the demo to remove the room and its nicknames.
+7. Participants choose one answer on their phones. Each answer is final.
+8. Click **Close answers & reveal**, then type **CLOSE**. Correct answers earn
+   100 points and move cars 20% along the track. Unanswered or wrong answers earn zero.
+9. Click **Open question 2**, then type **NEXT**. Repeat CLOSE/NEXT through five questions.
+10. Closing question five announces the top three names, scores, times and colored cars.
+11. Type **RESET** to keep nicknames but clear answers and scores for another round.
+12. Type **DELETE** after the demo to remove the room and its nicknames.
 
-The projector shows the latest or leading 12 racers. Every entry can win.
+The five topics are vibe coding, Antigravity, Skills, MCP and human control.
+Ranking uses most correct answers first, then the lowest total time for correct
+answers. Times are recorded at the server HTTP adapter, not supplied by phones.
+They include network and polling delay, so this is not a proctored or abuse-proof exam.
+Exact score/time ties share a rank; the podium displays the leading three entries.
+No answer key or current-question grade is exposed by the API before the host closes it.
+The question source is public in this teaching repository.
+
+The projector shows the latest or leading 12 cars. All 120 entries are ranked.
 Each phone also shows its own racer. One browser gets one entry per room;
 this is not verified real-person identity or a gambling system.
-One racer can start for solo testing and wins automatically. Empty rooms cannot start.
+One racer can test the full quiz alone, but must answer to earn points. Empty rooms cannot start.
+Previously saved waiting rooms upgrade when started. A previous random race can
+finish as before; RESET then upgrades it without removing nicknames.
 
 ## Concepts you can show
 
@@ -45,9 +61,9 @@ One racer can start for solo testing and wins automatically. Empty rooms cannot 
 | Vibe coding | Brief, reviewed plan, one small edit and tests |
 | Skill | `.agents/skills/name-race-builder/SKILL.md` |
 | Development MCP | `--guide`: static game rules and build steps |
-| Runtime MCP | Real stdio calls for registration, reads and host controls |
+| Runtime MCP | Real stdio calls for registration, answers, reads and host controls |
 | Agent | Optional Gemini loop reads anonymous facts and chooses a bounded style |
-| Human control | Only the logged-in host can start, reset, remove or delete |
+| Human control | Only the logged-in host can start, close/reveal, advance, reset, remove or delete |
 
 See [build steps](./BUILD_GUIDE.md), [demo script](./DEMO_SCRIPT.md),
 [validation and limits](./VALIDATION.md) and [deployment](./DEPLOY.md).
