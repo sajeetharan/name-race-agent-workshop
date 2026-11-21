@@ -40,7 +40,8 @@ function draw() {
     const player = room.players.find(p => p.id === card.dataset.player);
     if (!player) return;
     let value = player.durationMs ? Math.max(0, Math.min(100, elapsed / player.durationMs * 100)) : 0;
-    if (room.phase === 'waiting' || (reduced.matches && room.phase !== 'finished')) value = 0;
+    if (reduced.matches) value = room.phase === 'finished' ? 100 : 0;
+    else if (room.phase === 'waiting') value = 0;
     const lane = card.querySelector('.lane'), runner = card.querySelector('.runner');
     runner.style.transform = `translateX(${Math.max(0, lane.clientWidth - 64) * value / 100}px)`;
     card.querySelector('progress').value = value;
