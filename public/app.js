@@ -65,7 +65,7 @@ function render() {
   const qrPath = `/api/qr/${room.code}`; if (host && $('qr').getAttribute('src') !== qrPath) $('qr').src = qrPath;
   show('join-card', Boolean(guest && !state.you && room.phase === 'waiting'));
   show('host-controls', host); show('commentator', host); $('comment').disabled = busy || !meta.ai;
-  $('start').disabled = busy || room.phase !== 'waiting' || room.players.length < 2;
+  $('start').disabled = busy || room.phase !== 'waiting' || room.players.length < 1;
   $('reset').disabled = busy || room.phase !== 'finished';
   const winner = room.players.find(p => p.id === room.winnerId);
   show('winner', Boolean(winner)); $('winner').textContent = winner ? `${winner.name} wins!` : '';
@@ -102,7 +102,7 @@ function review(word, playerId) {
   returnFocus = document.activeElement;
   $('required-word').textContent = word; $('confirmation').value = '';
   $('review-title').textContent = word === 'START' ? 'Start this random race?' : word === 'DELETE' ? 'Delete this room and its nicknames?' : word === 'REMOVE' ? 'Remove this entry?' : 'Open the next round?';
-  $('review-copy').textContent = word === 'START' ? `${state.room.players.length} racers. Eight seconds. Code picks a random finish order. Joining closes.`
+  $('review-copy').textContent = word === 'START' ? `${state.room.players.length} ${state.room.players.length === 1 ? 'racer' : 'racers'}. Eight seconds. Code picks a random finish order. Joining closes.`
     : word === 'DELETE' ? 'The link will stop working. Registered nicknames will be removed.' : 'Only the host can approve this action.';
   $('review').showModal(); $('confirmation').focus();
 }

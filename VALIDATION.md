@@ -14,6 +14,9 @@ model access and guide/Skill discovery; errors do not become hidden fallbacks.
 - Prebuilt release deployed successfully; HTTPS `/healthz` checks the real MCP broker.
 - Host login verified privately. Unauthenticated host control returns 403;
   registration without consent returns 400.
+- Solo start verified on live Azure: one entry runs for eight seconds and wins;
+  the browser renders its result without errors. Empty-room start still returns 409.
+  All nine local tests pass, including the solo timing boundary and multiplayer guards.
 - Registered 120 synthetic entries on the live service; entry 121 returns 409.
   A burst of 120 full-room reads had 1,394 ms p95 and 1,787 ms maximum latency.
   These are rehearsal measurements, not a shared-plan performance guarantee.

@@ -151,7 +151,7 @@ export class RaceStore {
       const room = this.require(current), view = this.view(room);
       if (version !== view.room.version) throw new RaceError('STALE', 'The room changed. Read it and review again.');
       if (action === 'START') {
-        if (view.room.phase !== 'waiting' || room.players.length < 2) throw new RaceError('START', 'Wait for at least two racers in an open room.');
+        if (view.room.phase !== 'waiting' || room.players.length < 1) throw new RaceError('START', 'Wait for at least one racer in an open room.');
         const order = [...room.players];
         for (let i = order.length - 1; i > 0; i--) {
           const j = this.choose(i + 1);
@@ -159,7 +159,7 @@ export class RaceStore {
           [order[i], order[j]] = [order[j]!, order[i]!];
         }
         const winner = order[0]; if (!winner) throw new Error('Missing winner.');
-        order.forEach((p, i) => { p.durationMs = 8000 + i * 4000 / (order.length - 1); });
+        order.forEach((p, i) => { p.durationMs = 8000 + i * 4000 / Math.max(1, order.length - 1); });
         room.winnerId = winner.id; room.startedAt = this.now() + 2500; room.phase = 'running'; room.round++;
       } else if (action === 'RESET') {
         if (view.room.phase !== 'finished') throw new RaceError('RESET', 'Finish this race before opening the next round.');

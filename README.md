@@ -36,6 +36,7 @@ Do not expose that local configuration through a tunnel.
 The projector shows the latest or leading 12 racers. Every entry can win.
 Each phone also shows its own racer. One browser gets one entry per room;
 this is not verified real-person identity or a gambling system.
+One racer can start for solo testing and wins automatically. Empty rooms cannot start.
 
 ## Concepts you can show
 

@@ -19,6 +19,28 @@ test('120 concurrent registrations have unique entries; the 121st fails without 
   assert.equal(same.room.version, state.room.version);
   assert.ok(same.you); assert.ok(!JSON.stringify(same).includes('keyHash'));
 });
+test('empty rooms cannot start; one racer completes an eight-second solo race', async () => {
+  let now = 100000;
+  const store = new RaceStore(new MemoryRepository(), () => now);
+  let { room } = await store.create();
+  await assert.rejects(store.control(room.code, room.version, 'START'), /at least one racer/);
+  assert.equal((await store.read(room.code)).room.version, room.version);
+  const joined = await store.join(room.code, 'Solo Panda', key(1), true);
+  room = (await store.control(room.code, joined.room.version, 'START')).room;
+  assert.equal(room.players[0]?.durationMs, 8000);
+  assert.equal(room.winnerId, null);
+  assert.ok(room.startedAt !== null);
+  now = room.startedAt + 7999;
+  assert.equal((await store.read(room.code)).room.phase, 'running');
+  now++;
+  room = (await store.read(room.code)).room;
+  assert.equal(room.phase, 'finished');
+  assert.equal(room.winnerId, joined.you);
+  room = (await store.control(room.code, room.version, 'RESET')).room;
+  assert.equal(room.phase, 'waiting');
+  assert.equal(room.players.length, 1);
+  assert.equal(room.players[0]?.durationMs, null);
+});
 test('names, stale controls, random finish and next-round boundaries are code owned', async () => {
   let now = 100000;
   const store = new RaceStore(new MemoryRepository(), () => now, () => 0);
