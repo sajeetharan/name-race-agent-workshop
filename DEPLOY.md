@@ -33,7 +33,8 @@ az webapp deploy --subscription YOUR_SUBSCRIPTION --resource-group YOUR_GAME_GRO
 
 Check `/healthz`, host login, QR joining in a separate browser and an actual race.
 Never claim a deployment works from an upload response alone.
-For the quiz, verify START, one phone answer, CLOSE/reveal, NEXT, and the final
+For the quiz, verify START, one phone answer, one-click close/advance with the
+leaderboard and previous result visible, and the final
 named podium after closing question five. The release reads previous room files;
 waiting rooms upgrade at START, while finished legacy rooms upgrade at RESET.
 Committed nicknames and quiz answers remain outside the deployment directory.

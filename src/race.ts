@@ -14,7 +14,7 @@ export const keySchema = z.string().regex(/^[a-f0-9]{64}$/);
 export const versionSchema = z.number().int().positive();
 export const questionIndexSchema = z.number().int().min(0).max(4);
 export const choiceSchema = z.number().int().min(0).max(3);
-export const hostActionSchema = z.enum(['START', 'CLOSE', 'NEXT', 'RESET', 'REMOVE']);
+export const hostActionSchema = z.enum(['START', 'CLOSE', 'CLOSE_NEXT', 'NEXT', 'RESET', 'REMOVE']);
 export const nicknameSchema = z.string().trim().transform(v => v.normalize('NFKC').replace(/ +/g, ' '))
   .refine(v => [...v].length >= 1 && [...v].length <= 24 && /^[\p{L}\p{M}\p{N} ._-]+$/u.test(v),
     'Use 1-24 letters, numbers, spaces, dots, hyphens or underscores.');
@@ -54,6 +54,10 @@ export const roomSchema = z.object({
     prompt: z.string(), options: z.array(z.string()).length(4),
     openedAt: z.number(), closed: z.boolean(), answerCount: z.number().int().min(0).max(120),
     correctChoice: choiceSchema.nullable(), explanation: z.string().nullable(),
+  }).strict().nullable(),
+  previousQuestion: z.object({
+    number: z.number().int().min(1).max(4), prompt: z.string(),
+    options: z.array(z.string()).length(4), correctChoice: choiceSchema, explanation: z.string(),
   }).strict().nullable(),
 }).strict();
 export const outcomeSchema = z.object({
@@ -155,6 +159,7 @@ export class RaceStore {
         ? previous.rank : index + 1;
     });
     const definition = questions[room.questionIndex];
+    const previous = room.mode === 'quiz' ? questions[room.questionIndex - 1] : undefined;
     const own = key ? room.players.find(p => p.keyHash === hash(key)) : undefined;
     const answer = own?.answers.find(a => a.questionIndex === room.questionIndex);
     return { room: {
@@ -169,6 +174,10 @@ export class RaceStore {
         closed: room.questionState === 'closed', answerCount: players.filter(p => p.answered).length,
         correctChoice: room.questionState === 'closed' ? definition.correctChoice : null,
         explanation: room.questionState === 'closed' ? definition.explanation : null,
+      } : null,
+      previousQuestion: previous ? {
+        number: room.questionIndex, prompt: previous.prompt, options: [...previous.options],
+        correctChoice: previous.correctChoice, explanation: previous.explanation,
       } : null,
     }, you: own?.id ?? null,
     answer: answer ? { choice: answer.choice, correct: room.questionState === 'closed' ? answer.correct : null } : null };
@@ -238,13 +247,15 @@ export class RaceStore {
         room.mode = 'quiz'; room.questionIndex = 0; room.questionState = 'open'; room.questionOpenedAt = this.now();
         room.players.forEach(p => { p.answers = []; p.durationMs = null; });
         room.winnerId = null; room.startedAt = this.now(); room.phase = 'running'; room.round++;
-      } else if (action === 'CLOSE') {
+      } else if (action === 'CLOSE' || action === 'CLOSE_NEXT') {
         if (room.mode !== 'quiz' || room.phase !== 'running' || room.questionState !== 'open') throw new RaceError('CLOSE', 'Open a question before closing answers.');
         room.questionState = 'closed';
         if (room.questionIndex === questions.length - 1) {
           room.phase = 'finished';
           const top = [...this.view(room).room.players].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))[0];
           room.winnerId = top && top.score > 0 ? top.id : null;
+        } else if (action === 'CLOSE_NEXT') {
+          room.questionIndex++; room.questionState = 'open'; room.questionOpenedAt = this.now();
         }
       } else if (action === 'NEXT') {
         if (room.mode !== 'quiz' || room.phase !== 'running' || room.questionState !== 'closed' || room.questionIndex >= questions.length - 1) {

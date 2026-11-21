@@ -21,7 +21,7 @@ export function createRaceMcp(store: RaceStore, authority: string, guide = false
   }
   if (guide) {
     server.registerTool('get_game_rules', { inputSchema: {}, annotations: { readOnlyHint: true } }, () => output({
-      rules: '120 nicknames per room. Five workshop questions. Host reviews START, CLOSE and NEXT. Each correct answer earns 100 points and moves a car. Total correct-answer receipt time breaks score ties. Final top three appear on the podium. Host alone reopens or deletes a room.',
+      rules: '120 nicknames per room. Five workshop questions. Host reviews START and clicks CLOSE_NEXT to close answers and open the next question atomically, or finish question five. Separate CLOSE and NEXT remain available. Each correct answer earns 100 points and moves a car. Total correct-answer receipt time breaks score ties. Final top three appear on the podium. Host alone reopens or deletes a room.',
       privacy: 'No email or real name needed. Only anonymous racer labels reach an optional AI commentator.',
     }));
     server.registerTool('get_build_steps', { inputSchema: {}, annotations: { readOnlyHint: true } }, () => output({

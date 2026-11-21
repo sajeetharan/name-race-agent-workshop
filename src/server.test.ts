@@ -7,6 +7,7 @@ import { request } from 'node:http';
 import { once } from 'node:events';
 import { connectRace } from './connection.ts';
 import { createRaceServer } from './server.ts';
+import { questions } from './questions.ts';
 
 test('separate guest/host flows enforce login, consent, origin, source isolation and real QR', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'name-race-http-'));
@@ -67,7 +68,28 @@ test('separate guest/host flows enforce login, consent, origin, source isolation
     const personal = await (await fetch(`${origin}/api/room/${code}`, { headers: { Cookie: viewerCookie } })).json();
     assert.equal(personal.result.answer.correct, true);
     const publicState = await (await fetch(`${origin}/api/room/${code}`)).json(); assert.equal(publicState.result.answer, null);
-    assert.equal((await post('/api/control', { code, expectedVersion: revealed.result.room.controlVersion, confirmation: 'NEXT' }, hostCookie)).status, 200);
+    const next = await post('/api/control', { code, expectedVersion: revealed.result.room.controlVersion, confirmation: 'NEXT' }, hostCookie);
+    assert.equal(next.status, 200);
+    let advanced = await next.json();
+    const closeNext = { code, expectedVersion: advanced.result.room.controlVersion, confirmation: 'CLOSE_NEXT' };
+    assert.equal((await post('/api/control', closeNext, viewerCookie)).status, 403);
+    const moved = await post('/api/control', closeNext, hostCookie);
+    assert.equal(moved.status, 200);
+    advanced = await moved.json();
+    assert.equal(advanced.result.room.question.number, 3);
+    assert.equal(advanced.result.room.question.correctChoice, null);
+    assert.equal(advanced.result.room.previousQuestion.number, 2);
+    assert.equal((await post('/api/control', closeNext, hostCookie)).status, 409);
+    for (let index = 2; index < questions.length; index++) {
+      assert.equal((await post('/api/answer', { code, round: advanced.result.room.round, questionIndex: index,
+        choice: questions[index]!.correctChoice }, viewerCookie)).status, 200);
+      const response = await post('/api/control', { code, expectedVersion: advanced.result.room.controlVersion, confirmation: 'CLOSE_NEXT' }, hostCookie);
+      assert.equal(response.status, 200);
+      advanced = await response.json();
+    }
+    assert.equal(advanced.result.room.phase, 'finished');
+    assert.equal(advanced.result.room.players[0].score, 400);
+    assert.equal(advanced.result.room.winnerId, first.result.you);
     assert.equal((await post('/api/join', { code, name: 'Late Racer', consent: true })).status, 409);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await connection.close(); await rm(dir, { recursive: true, force: true }); }
 });

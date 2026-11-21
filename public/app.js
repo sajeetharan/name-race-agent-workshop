@@ -114,7 +114,7 @@ function renderQuestion(host, room) {
   }
   const feedback = question.closed ? state.answer
     ? state.answer.correct ? 'Correct! Your car moves forward. +100 points.' : 'Not this time. No points for this answer.'
-    : host ? 'Answers are closed. Explain the result, then open the next question.' : 'No answer was saved. No points for this question.'
+    : host ? question.number === 5 ? 'Quiz finished. Show the final leaderboard and podium.' : 'Answers are closed. Explain the result, then open the next question.' : 'No answer was saved. No points for this question.'
     : state.answer ? `Answer ${'ABCD'[state.answer.choice]} saved. Wait for the host to reveal the result.`
       : host ? 'Participants answer on their phones. Close answers when you are ready.'
         : state.you ? 'Your choice is final after you tap. Pick one answer.'
@@ -122,10 +122,27 @@ function renderQuestion(host, room) {
   say('answer-feedback', feedback);
   show('explanation', question.closed);
   $('explanation').textContent = question.closed ? `Answer ${'ABCD'[question.correctChoice]}: ${question.options[question.correctChoice]}. ${question.explanation}` : '';
+  const previous = room.previousQuestion;
+  show('previous-result', Boolean(previous && !question.closed));
+  say('previous-result', previous ? `Question ${previous.number} result: ${'ABCD'[previous.correctChoice]}. ${previous.options[previous.correctChoice]}. ${previous.explanation}` : '');
   show('question-controls', host && room.phase === 'running');
+  $('question-controls').setAttribute('aria-busy', String(busy));
   $('close-question').disabled = busy || question.closed;
+  $('close-question').textContent = question.number === 5 ? 'Close question & show podium' : 'Close & open next question';
+  show('next-question', question.closed && question.number < 5);
   $('next-question').disabled = busy || !question.closed || question.number === 5;
   $('next-question').textContent = `Open question ${Math.min(5, question.number + 1)}`;
+}
+function renderLeaderboard(room, players) {
+  show('leaderboard-section', room.mode === 'quiz' && room.phase !== 'waiting');
+  $('leaderboard').replaceChildren(...players.map(player => {
+    const row = document.createElement('tr');
+    if (player.id === state.you) row.className = 'your-standing';
+    for (const value of [`#${player.rank}`, player.name, String(player.score), seconds(player.answerTimeMs)]) {
+      const cell = document.createElement('td'); cell.textContent = value; row.append(cell);
+    }
+    return row;
+  }));
 }
 function renderPodium(room, players) {
   const visible = room.mode === 'quiz' && room.phase === 'finished';
@@ -183,7 +200,7 @@ function render() {
     : [...room.players].sort((a, b) => quiz ? a.rank - b.rank : a.durationMs - b.durationMs);
   $('track-label').textContent = room.phase === 'waiting' ? 'Latest arrivals' : 'Leading cars';
   updateTracks('tracks', players.slice(0, 12));
-  renderQuestion(host, room); renderPodium(room, players);
+  renderQuestion(host, room); renderLeaderboard(room, players); renderPodium(room, players);
   $('names').replaceChildren(...room.players.map(player => {
     const item = document.createElement('li'), name = document.createElement('span');
     name.textContent = `${player.label}: ${player.name}${quiz && room.phase !== 'waiting' ? ` / ${player.score} points / rank ${player.rank}` : ''}`; item.append(name);
@@ -254,7 +271,15 @@ $('join-form').onsubmit = event => { event.preventDefault(); void action(async (
   await api('/api/join', { code, name: $('nickname').value, consent: $('consent').checked }); await refresh(true); $('room-title').focus();
 }); };
 $('start').onclick = () => review('START'); $('reset').onclick = () => review('RESET'); $('delete').onclick = () => review('DELETE');
-$('close-question').onclick = () => review('CLOSE'); $('next-question').onclick = () => review('NEXT');
+function controlQuestion(confirmation) {
+  const expectedVersion = state.room.controlVersion;
+  void action(async () => {
+    await api('/api/control', { code, expectedVersion, confirmation });
+    etag = undefined; await refresh(true);
+  });
+}
+$('close-question').onclick = () => controlQuestion('CLOSE_NEXT');
+$('next-question').onclick = () => controlQuestion('NEXT');
 $('comment').onclick = () => { void action(async () => { $('commentary').textContent = 'Reading the actual race...'; try {
   const value = await api('/api/commentary', { code }); $('commentary').textContent = value.reply;
 } catch (failure) { $('commentary').textContent = 'Commentary failed. Try again after the result is stable.'; throw failure; } }); };

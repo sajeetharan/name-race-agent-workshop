@@ -10,9 +10,12 @@
 3. **Build the rules.** Read `src/questions.ts` and `src/race.ts`: one-shot answers,
    score/time ranking, private grades, persistence, expiry and public snapshots.
    Answer receipts increment the read version; host commands use `controlVersion`
-   so incoming answers do not invalidate a reviewed CLOSE. Run `npm test`.
+   so incoming answers do not invalidate a host-approved CLOSE_NEXT. This action
+   closes and advances atomically; separate CLOSE/NEXT remain available. Run `npm test`.
 4. **Build the screens.** Read `public/`: phone answers, QR invite, colored cars,
-   podium and review dialog.
+   live leaderboard, previous-question result, podium and review dialog.
+   A host click approves question progression; starting/resetting/deleting still
+   require typed confirmation.
    Check two separate browsers, small screens, keyboard controls and reduced motion.
 5. **Use the Skill.** Ask your coding agent to use `name-race-builder` for one small
    approved wording change. Check actual host discovery; a file alone does not prove loading.

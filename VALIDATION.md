@@ -2,6 +2,30 @@
 
 ## Current five-question quiz
 
+### One-click host controls and Antigravity final question
+
+- Strict build, browser JavaScript syntax and all **11 tests** pass on the
+  current Node runtime.
+- CLOSE_NEXT closes and opens the next question in one serialized mutation.
+  Tests verify stale/duplicate-click rejection, next-question grade privacy,
+  server-owned opening time, retained scoring, final podium and RESET.
+  Separate CLOSE/NEXT and existing persisted rooms remain supported.
+- An isolated browser rehearsal registered 120 synthetic entries and displayed
+  all 120 leaderboard rows beside the question on desktop and below it on a
+  narrow phone screen, with no horizontal page overflow.
+- Every question advanced with one host button click and no typed confirmation.
+  The leaderboard reflected the submitted answer, the previous result stayed
+  visible, and closing question five displayed the named podium.
+- The final question now asks about reviewing an Antigravity implementation
+  plan before clicking Proceed.
+- The prebuilt release was deployed to the existing HTTPS app. Live checks
+  verified health, released UI code, private host login, QR joining, all five
+  one-click transitions, private grades, previous results, a 500-point final
+  leaderboard and the winner. Synthetic rooms were deleted; cleanup was
+  confirmed with the API result and HTTP 404.
+
+### Earlier five-question release
+
 - Strict build, browser JavaScript syntax and all ten tests pass on Node 26 and
   the minimum supported Node 24.13.
 - Tests cover one racer, 120 concurrent registrations and real MCP answers,

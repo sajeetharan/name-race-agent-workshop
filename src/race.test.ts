@@ -102,6 +102,53 @@ test('quiz scoring, speed ties, private answers and question boundaries are code
   room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
   assert.equal(room.phase, 'waiting'); assert.equal(room.players.length, 4); assert.equal(room.winnerId, null);
 });
+test('one host click closes and advances atomically, keeps next grades private and finishes the podium', async () => {
+  let now = 100000;
+  const store = new RaceStore(new MemoryRepository(), () => now);
+  let { room } = await store.create();
+  const joined = await store.join(room.code, 'Plan Panda', key(1), true);
+  room = (await store.join(room.code, 'Late Bird', key(2), true)).room;
+  await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE_NEXT'), /Open a question/);
+  room = (await store.control(room.code, room.controlVersion, 'START')).room;
+  assert.equal(room.previousQuestion, null);
+  for (let index = 0; index < questions.length; index++) {
+    const version = room.controlVersion;
+    now += 100;
+    const submitted = await store.answer(room.code, key(1), room.round, index, questions[index]!.correctChoice);
+    assert.equal(submitted.answer?.correct, null);
+    assert.equal(submitted.room.players[0]?.score, index * 100);
+    assert.equal(submitted.room.controlVersion, version);
+    now += 50;
+    room = (await store.control(room.code, version, 'CLOSE_NEXT')).room;
+    assert.equal(room.controlVersion, version + 1);
+    assert.equal(room.players[0]?.score, (index + 1) * 100);
+    assert.equal(room.players[0]?.rank, 1);
+    assert.equal(room.players[1]?.score, 0);
+    await assert.rejects(store.control(room.code, version, 'CLOSE_NEXT'), /changed/);
+    await assert.rejects(store.answer(room.code, key(2), room.round, index, questions[index]!.correctChoice), /not open/);
+    if (index < questions.length - 1) {
+      assert.equal(room.phase, 'running');
+      assert.equal(room.question?.index, index + 1);
+      assert.equal(room.question?.openedAt, now);
+      assert.equal(room.question?.answerCount, 0);
+      assert.equal(room.question?.closed, false);
+      assert.equal(room.question?.correctChoice, null);
+      assert.equal(room.question?.explanation, null);
+      assert.equal(room.previousQuestion?.number, index + 1);
+      assert.equal(room.previousQuestion?.correctChoice, questions[index]!.correctChoice);
+    }
+  }
+  assert.equal(room.phase, 'finished');
+  assert.equal(room.question?.number, 5);
+  assert.match(room.question!.prompt, /Antigravity Plan mode/);
+  assert.equal(room.question?.closed, true);
+  assert.equal(room.players[0]?.score, 500);
+  assert.equal(room.winnerId, joined.you);
+  await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE_NEXT'), /Open a question/);
+  room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
+  assert.equal(room.previousQuestion, null);
+  assert.equal(room.players[0]?.score, 0);
+});
 test('file-backed MCP survives reconnect, serializes joins, hides proofs and enforces host authority', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'name-race-mcp-'));
   let connection = await connectRace(dir);
@@ -130,8 +177,11 @@ test('file-backed MCP survives reconnect, serializes joins, hides proofs and enf
     const answered = (await connection.call('read_room', { code, viewerKey: key(1) }, outcomeSchema)).result;
     assert.equal(answered.room.question?.answerCount, 120); assert.equal(answered.room.players[0]?.score, 0);
     assert.equal(answered.answer?.correct, null); assert.ok(!JSON.stringify(answered).includes('elapsedMs'));
-    outcome = (await connection.call('host_control', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'CLOSE' }, outcomeSchema)).result;
+    outcome = (await connection.call('host_control', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'CLOSE_NEXT' }, outcomeSchema)).result;
     assert.ok(outcome.room.players.every(p => p.score === 100));
+    assert.equal(outcome.room.question?.number, 2);
+    assert.equal(outcome.room.question?.correctChoice, null);
+    assert.equal(outcome.room.previousQuestion?.number, 1);
     await connection.call('delete_room', { code, expectedVersion: outcome.room.controlVersion, confirmation: 'DELETE' },
       (await import('zod')).z.object({ deleted: (await import('zod')).z.literal(true) }));
     await assert.rejects(readFile(join(dir, `${code}.json`)), /ENOENT/);

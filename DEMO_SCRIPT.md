@@ -21,45 +21,45 @@ Show the names and cars. Review the entries and type START.
 "What is a good first step when building with AI? Pick one answer on your phone.
 Your answer is final after you tap. We start with a clear goal and review a plan."
 
-Wait for answers. Type CLOSE to reveal. Show cars moving for correct answers.
+Wait for answers. Click **Close & open next question**. Show cars moving and the leaderboard updating.
 Show the reusable Skill as a recipe: read, plan, change and test.
 
 **4-6 / Question 2: Antigravity**
 
-Type NEXT.
+Question two opens automatically.
 
 "Antigravity helps us build and review code. It does not make every answer true,
 and it does not remove the need for tests. People still check the result."
 
-Wait for answers and type CLOSE. Show `npm run check` and one reviewed code edit.
+Show `npm run check` and one reviewed code edit. Wait for answers and click **Close & open next question**.
 
 **6-8 / Question 3: Skills**
 
-Type NEXT.
+Question three opens automatically.
 
 "A Skill is a reusable recipe for a task. It is not a password or permission to
 do anything. We use it to guide a small, safe change."
 
-Wait and type CLOSE. Show the actual Skill file and explain its review boundary.
+Show the actual Skill file and explain its review boundary. Wait and click **Close & open next question**.
 
 **8-10 / Question 4: MCP**
 
-Type NEXT.
+Question four opens automatically.
 
 "MCP connects apps and AI to real tools and data. Registration and answers use
 real MCP calls. Here is the request and actual result. Private keys are omitted."
 
 Show `submit_answer`, `read_room` and `host_control` in the trace. The coding
-guide is a separate, read-only connection. Wait and type CLOSE.
+guide is a separate, read-only connection. Wait and click **Close & open next question**.
 
-**10-12 / Question 5: human control**
+**10-12 / Question 5: Antigravity Plan mode**
 
-Type NEXT.
+Question five opens automatically.
 
-"Only the host should approve starting, closing, reopening or deleting the room.
-A participant chooses answers. The optional AI cannot grade or control the quiz."
+"In Antigravity Plan mode, review the implementation plan before clicking Proceed.
+The agent can help build, but people still check and test its work."
 
-Wait and type CLOSE. Closing question five reveals the named top-three podium.
+Wait and click **Close question & show podium**. Closing question five reveals the named top-three podium.
 
 **12-14 / Podium and agent recap**
 

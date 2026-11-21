@@ -32,14 +32,17 @@ Do not expose that local configuration through a tunnel.
 5. Review the names. Remove unsuitable entries before starting.
 6. Click **Review & start race**, review the count, and type **START**.
 7. Participants choose one answer on their phones. Each answer is final.
-8. Click **Close answers & reveal**, then type **CLOSE**. Correct answers earn
+8. Click **Close & open next question** once. No typed CLOSE or NEXT is needed.
+   The server closes answers and opens the next question atomically. Correct answers earn
    100 points and move cars 20% along the track. Unanswered or wrong answers earn zero.
-9. Click **Open question 2**, then type **NEXT**. Repeat CLOSE/NEXT through five questions.
-10. Closing question five announces the top three names, scores, times and colored cars.
+9. Repeat for each question. The leaderboard stays visible beside the question on
+   wide screens (below it on phones), with all racers ranked. The previous answer
+   and explanation remain visible while the next question is open.
+10. **Close question & show podium** ends question five and announces the top three names, scores, times and colored cars.
 11. Type **RESET** to keep nicknames but clear answers and scores for another round.
 12. Type **DELETE** after the demo to remove the room and its nicknames.
 
-The five topics are vibe coding, Antigravity, Skills, MCP and human control.
+The five topics are vibe coding, Antigravity, Skills, MCP and Antigravity Plan mode.
 Ranking uses most correct answers first, then the lowest total time for correct
 answers. Times are recorded at the server HTTP adapter, not supplied by phones.
 They include network and polling delay, so this is not a proctored or abuse-proof exam.
@@ -63,7 +66,7 @@ finish as before; RESET then upgrades it without removing nicknames.
 | Development MCP | `--guide`: static game rules and build steps |
 | Runtime MCP | Real stdio calls for registration, answers, reads and host controls |
 | Agent | Optional Gemini loop reads anonymous facts and chooses a bounded style |
-| Human control | Only the logged-in host can start, close/reveal, advance, reset, remove or delete |
+| Human control | Only the logged-in host can start, close/advance, reset, remove or delete; a click explicitly approves question progression |
 
 See [build steps](./BUILD_GUIDE.md), [demo script](./DEMO_SCRIPT.md),
 [validation and limits](./VALIDATION.md) and [deployment](./DEPLOY.md).

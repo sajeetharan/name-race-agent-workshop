@@ -24,9 +24,9 @@ export const questions = [
     explanation: 'MCP is a standard way to connect applications and AI to tools and data.',
   },
   {
-    prompt: 'Who should approve starting or deleting this quiz room?',
-    options: ['Any participant', 'The host', 'The AI without asking', 'The fastest phone'],
+    prompt: 'In Antigravity Plan mode, what should you do before clicking Proceed?',
+    options: ['Skip all testing', 'Review the implementation plan', 'Approve every action without reading', 'Hide errors from the agent'],
     correctChoice: 1,
-    explanation: 'The host reviews and approves room controls. Participants only submit their own answers.',
+    explanation: 'Review the implementation plan before letting the agent build. People still check and test the result.',
   },
 ] as const;
