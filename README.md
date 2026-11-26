@@ -25,9 +25,10 @@ Do not expose that local configuration through a tunnel.
 
 ## Run the live demo
 
-1. Open the live host URL before sharing your screen.
-2. In Azure Portal, open **your game app > Environment variables > HOST_PASSWORD**.
-   Copy the value privately into the host login. Never show it in a recording.
+1. Open the live host URL before sharing your screen. **No host password or login is needed.**
+2. Use the same browser throughout: only the browser that creates a room can
+   control it. A private HttpOnly cookie proves ownership. Clearing cookies,
+   switching browsers or using an old room does not grant host access; create a fresh room.
 3. Click **Create race room**. Share the QR code; the host invite card does not display the join URL.
 4. Participants enter nicknames and consent to display them. No email or real name is needed.
 5. Review the names. Remove unsuitable entries before starting.
@@ -71,7 +72,7 @@ finish as before; RESET then upgrades it without removing nicknames.
 | Development MCP | `--guide`: static game rules and build steps |
 | Runtime MCP | Real stdio calls for registration, answers, reads and host controls |
 | Agent | Optional Gemini loop reads anonymous facts and chooses a bounded style |
-| Human control | Only the logged-in host can start, close/advance, reset, remove or delete; a click explicitly approves question progression |
+| Human control | Only the room creator's browser can start, close/advance, reset, remove or delete; a click explicitly approves question progression |
 
 See [build steps](./BUILD_GUIDE.md), [demo script](./DEMO_SCRIPT.md),
 [validation and limits](./VALIDATION.md) and [deployment](./DEPLOY.md).
@@ -93,5 +94,10 @@ and while the app is active. Host deletion removes the room immediately.
 The included Azure `/home` storage preserves committed rooms across app restarts.
 Use one app instance and one broker owner; this is a teaching demo, not a
 production multi-instance backend. Do not deploy updates during a live race.
+The public app uses `HOST_MODE=browser`; `HOST_PASSWORD` stays private on the
+server as the ownership-cookie signing secret, not a password people enter.
+Anyone can create their own room, but cannot control another browser's room.
+Room creation is not rate-limited; this remains a small public teaching demo.
+Legacy password login is still available with `HOST_MODE=password`.
 
 Licensed under [Apache-2.0](./LICENSE). See [NOTICE](./NOTICE).

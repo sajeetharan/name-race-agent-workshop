@@ -6,9 +6,11 @@ Use this recap only if time allows; preserve time for audience questions.
 
 ## Prepare
 
-Open the live host and log in privately. Create a fresh room shortly before the
+Open the live host; no password is needed. Create a fresh room shortly before the
 session; rooms last two hours. Share its QR code. Use nicknames, not private data.
 The quiz needs no model key. Review the entries and type START.
+Keep the creator's browser and cookies throughout the quiz; another browser
+cannot control this room.
 
 "Five quick questions about teaching coding agents. Correct answers move your
 car. Your answers decide the result, not luck or AI."

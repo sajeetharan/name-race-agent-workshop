@@ -101,3 +101,71 @@ test('public server rejects missing host secret and non-HTTPS configuration', as
     assert.throws(() => createRaceServer(connection, { publicOrigin: 'http://game.example', password: 'test-password-long' }), /HTTPS/);
   } finally { await connection.close(); await rm(dir, { recursive: true, force: true }); }
 });
+test('password-free hosting scopes signed creator cookies to one room and survives reconnect', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'name-race-owner-'));
+  let connection = await connectRace(dir);
+  let server = createRaceServer(connection, { password: 'test-signing-secret-long', hostMode: 'browser' });
+  let origin = '';
+  const listen = async () => {
+    server.listen(0, '127.0.0.1'); await once(server, 'listening');
+    const address = server.address(); if (!address || typeof address === 'string') throw new Error('No listener');
+    origin = `http://127.0.0.1:${address.port}`;
+  };
+  const post = (path: string, data: unknown, cookies = '', source = origin) => fetch(`${origin}${path}`, {
+    method: 'POST', headers: { Origin: source, 'Content-Type': 'application/json', Cookie: cookies }, body: JSON.stringify(data),
+  });
+  const stop = async () => {
+    server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await connection.close();
+  };
+  try {
+    assert.throws(() => createRaceServer(connection, { hostMode: 'browser' }), /signing secret/);
+    await listen();
+    const meta = await (await fetch(`${origin}/api/meta`)).json();
+    assert.equal(meta.loginRequired, false); assert.equal(meta.hostMode, 'browser');
+    assert.equal((await post('/api/login', { password: 'test-signing-secret-long' })).status, 409);
+    const created = await post('/api/create', {}); assert.equal(created.status, 200);
+    const ownerCookie = created.headers.get('set-cookie')?.split(';')[0]; assert.ok(ownerCookie);
+    assert.match(created.headers.get('set-cookie')!, /HttpOnly; SameSite=Strict; Max-Age=7200/);
+    const first = await created.json(), code = first.result.room.code;
+    assert.equal(first.isHost, true);
+    const secondResponse = await post('/api/create', {});
+    const secondCookie = secondResponse.headers.get('set-cookie')?.split(';')[0]; assert.ok(secondCookie);
+    const second = await secondResponse.json();
+    const joined = await post('/api/join', { code, name: 'Owner Test Panda', consent: true });
+    const viewerCookie = joined.headers.get('set-cookie')?.split(';')[0]; assert.ok(viewerCookie);
+    const registration = await joined.json();
+    const args = { code, expectedVersion: registration.result.room.controlVersion, confirmation: 'START' };
+    const publicRead = await fetch(`${origin}/api/room/${code}`);
+    assert.equal((await publicRead.json()).isHost, false);
+    const ownerRead = await fetch(`${origin}/api/room/${code}`, { headers: {
+      Cookie: ownerCookie, 'If-None-Match': publicRead.headers.get('etag') ?? '',
+    } });
+    assert.equal(ownerRead.status, 200); assert.equal((await ownerRead.json()).isHost, true);
+    for (const proof of ['', viewerCookie, secondCookie, `nr_owner_${code}=${'0'.repeat(64)}`,
+      secondCookie.replace(`nr_owner_${second.result.room.code}`, `nr_owner_${code}`)]) {
+      assert.equal((await post('/api/control', args, proof)).status, 403);
+      assert.equal((await post('/api/delete', { ...args, confirmation: 'DELETE' }, proof)).status, 403);
+      assert.equal((await post('/api/commentary', { code }, proof)).status, 403);
+    }
+    assert.equal((await post('/api/control', args, ownerCookie, 'https://evil.example')).status, 403);
+    const started = await post('/api/control', args, ownerCookie); assert.equal(started.status, 200);
+    let current = await started.json();
+    await stop(); connection = await connectRace(dir);
+    server = createRaceServer(connection, { password: 'test-signing-secret-long', hostMode: 'browser' });
+    await listen();
+    assert.equal((await (await fetch(`${origin}/api/room/${code}`, { headers: { Cookie: ownerCookie } })).json()).isHost, true);
+    for (let index = 0; index < questions.length; index++) {
+      const answered = await post('/api/answer', { code, round: current.result.room.round,
+        questionIndex: index, choice: questions[index]!.correctChoice }, viewerCookie);
+      assert.equal(answered.status, 200);
+      const advanced = await post('/api/control', { code, expectedVersion: current.result.room.controlVersion,
+        confirmation: 'CLOSE_NEXT' }, ownerCookie);
+      assert.equal(advanced.status, 200); current = await advanced.json();
+    }
+    assert.equal(current.result.room.phase, 'finished');
+    assert.equal(current.result.room.players[0].score, 500);
+    assert.equal((await post('/api/delete', { code, expectedVersion: current.result.room.controlVersion,
+      confirmation: 'DELETE' }, ownerCookie)).status, 200);
+    assert.equal((await fetch(`${origin}/api/room/${code}`)).status, 404);
+  } finally { await stop(); await rm(dir, { recursive: true, force: true }); }
+});

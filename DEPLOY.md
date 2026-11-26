@@ -21,6 +21,10 @@ Configure these privately on **your new app**, not the shared plan or another ap
 
 - `PUBLIC_BASE_URL`: exact HTTPS app origin, without trailing slash.
 - `HOST_PASSWORD`: a random private value of at least 16 characters.
+- `HOST_MODE`: `browser` for password-free room creation. `HOST_PASSWORD` is then
+  a server-only signing secret for room-scoped HttpOnly creator cookies.
+  Keep it stable across restarts; rotating it invalidates host ownership.
+  Use `password` for the legacy login mode.
 - `RACE_DATA_DIR`: `/home/data/name-race`.
 - `WEBSITES_ENABLE_APP_SERVICE_STORAGE`: `true`.
 - `SCM_DO_BUILD_DURING_DEPLOYMENT`: `false` for this prebuilt release.
@@ -31,7 +35,10 @@ az webapp deploy --subscription YOUR_SUBSCRIPTION --resource-group YOUR_GAME_GRO
   --name YOUR_GAME_APP --src-path .\name-race-release.zip --type zip
 ```
 
-Check `/healthz`, host login, QR joining in a separate browser and an actual race.
+Check `/healthz`, password-free room creation, QR joining in a separate browser,
+denial of another browser's control/delete attempts, and an actual race.
+Create a fresh room after switching to browser hosting; existing password-mode
+rooms have no creator cookie and cannot be claimed by arbitrary visitors.
 Never claim a deployment works from an upload response alone.
 For the quiz, verify START, one phone answer, one-click close/advance with the
 leaderboard and previous result visible, and the final

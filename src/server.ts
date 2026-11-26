@@ -12,13 +12,17 @@ import { choiceSchema, codeSchema, hostActionSchema, keySchema, nicknameSchema, 
 import { createCommentator, geminiProvider } from './agent.ts';
 import type { Commentator } from './agent.ts';
 
-export interface Config { publicOrigin?: string; password?: string }
+export interface Config { publicOrigin?: string; password?: string; hostMode?: 'password' | 'browser' }
 const digest = (value: string) => createHash('sha256').update(value).digest();
 function cookie(request: IncomingMessage, name: string) {
   return request.headers.cookie?.split(';').map(v => v.trim()).find(v => v.startsWith(`${name}=`))?.slice(name.length + 1);
 }
 function session(password: string, expiry: string) { return createHmac('sha256', password).update(expiry).digest('hex'); }
 export function createRaceServer(connection: RaceConnection, config: Config = {}, agent?: Commentator) {
+  const browserHosting = config.hostMode === 'browser';
+  if (browserHosting && (!config.password || config.password.length < 16)) {
+    throw new Error('Browser-owned hosting requires a private HOST_PASSWORD signing secret of at least 16 characters; no password is entered by the host.');
+  }
   if (config.publicOrigin && (new URL(config.publicOrigin).origin !== config.publicOrigin ||
     !config.publicOrigin.startsWith('https://') || !config.password || config.password.length < 16)) {
     throw new Error('Public hosting requires an exact HTTPS PUBLIC_BASE_URL and a private HOST_PASSWORD of at least 16 characters.');
@@ -36,22 +40,36 @@ export function createRaceServer(connection: RaceConnection, config: Config = {}
       const secure = config.publicOrigin ? '; Secure' : '';
       const setCookie = (name: string, value: string) => response.setHeader('Set-Cookie', `${name}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=7200${secure}`);
       const hostToken = cookie(request, 'nr_host')?.split('.');
-      const authenticated = !config.password || Boolean(hostToken?.length === 2 && hostToken[0] && hostToken[1] &&
+      const authenticated = browserHosting || !config.password || Boolean(hostToken?.length === 2 && hostToken[0] && hostToken[1] &&
         /^\d+$/.test(hostToken[0]) && /^[a-f0-9]{64}$/.test(hostToken[1]) && Number(hostToken[0]) > Date.now() &&
         timingSafeEqual(Buffer.from(hostToken[1]), Buffer.from(session(config.password, hostToken[0]))));
-      const hostOnly = () => { if (!authenticated) throw new RaceError('AUTH', 'Host login required.', 403); };
+      const isHost = (code: string) => {
+        if (!browserHosting) return authenticated;
+        const proof = cookie(request, `nr_owner_${code}`);
+        return Boolean(config.password && proof && /^[a-f0-9]{64}$/.test(proof) &&
+          timingSafeEqual(Buffer.from(proof), Buffer.from(session(config.password, `room:${code}`))));
+      };
+      const hostOnly = (code?: string) => {
+        if (browserHosting ? code !== undefined && !isHost(code) : !authenticated) {
+          throw new RaceError('AUTH', browserHosting
+            ? 'Only the browser that created this room can control it. Create a fresh room in this browser.'
+            : 'Host login required.', 403);
+        }
+      };
       if (request.method === 'GET') {
         if (path === '/healthz') { await connection.client.ping(); json(200, { ok: true }); return; }
-        if (path === '/api/meta') { json(200, { authenticated, loginRequired: Boolean(config.password), ai: Boolean(agent) }); return; }
+        if (path === '/api/meta') { json(200, { authenticated, loginRequired: !browserHosting && Boolean(config.password),
+          hostMode: browserHosting ? 'browser' : 'password', ai: Boolean(agent) }); return; }
         const roomMatch = /^\/api\/room\/([A-F0-9]{8})$/.exec(path);
         if (roomMatch?.[1]) {
           const code = roomMatch[1], key = cookie(request, `nr_${code}`);
           if (key) keySchema.parse(key);
           const outcome = await connection.call('read_room', { code, ...(key ? { viewerKey: key } : {}) }, outcomeSchema);
-          const etag = `"${code}-${outcome.result.room.version}-${outcome.result.you ?? 'guest'}"`;
+          const host = isHost(code);
+          const etag = `"${code}-${outcome.result.room.version}-${outcome.result.you ?? 'guest'}-${host ? 'host' : 'viewer'}"`;
           response.setHeader('ETag', etag);
           if (request.headers['if-none-match'] === etag) { response.writeHead(304); response.end(); return; }
-          json(200, { result: outcome.result }); return;
+          json(200, { result: outcome.result, isHost: host }); return;
         }
         const qr = /^\/api\/qr\/([A-F0-9]{8})$/.exec(path);
         if (qr?.[1]) {
@@ -80,6 +98,7 @@ export function createRaceServer(connection: RaceConnection, config: Config = {}
       try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
       catch (error) { if (!(error instanceof SyntaxError)) throw error; throw new RaceError('JSON', 'Invalid JSON.', 400); }
       if (path === '/api/login') {
+        if (browserHosting) throw new RaceError('PASSWORDLESS', 'No host login is needed. Create a room to host it in this browser.');
         const args = z.object({ password: z.string().max(256) }).strict().parse(input);
         if (!config.password || !timingSafeEqual(digest(args.password), digest(config.password))) throw new RaceError('AUTH', 'Incorrect host password.', 403);
         const expiry = String(Date.now() + 7200000); setCookie('nr_host', `${expiry}.${session(config.password, expiry)}`);
@@ -99,22 +118,29 @@ export function createRaceServer(connection: RaceConnection, config: Config = {}
         keySchema.parse(key);
         json(200, await connection.call('submit_answer', { ...args, viewerKey: key, receivedAt: Date.now() }, outcomeSchema)); return;
       }
-      hostOnly();
       if (path === '/api/create') {
+        hostOnly();
         z.object({}).strict().parse(input);
         const outcome = await connection.call('create_room', {}, outcomeSchema);
-        json(200, { ...outcome, joinUrl: `${origin}/r/${outcome.result.room.code}` }); return;
+        if (browserHosting && config.password) {
+          const code = outcome.result.room.code;
+          setCookie(`nr_owner_${code}`, session(config.password, `room:${code}`));
+        }
+        json(200, { ...outcome, isHost: true, joinUrl: `${origin}/r/${outcome.result.room.code}` }); return;
       }
       if (path === '/api/control') {
         const args = z.object({ code: codeSchema, expectedVersion: versionSchema, confirmation: hostActionSchema, playerId: z.uuid().optional() }).strict().parse(input);
+        hostOnly(args.code);
         json(200, await connection.call('host_control', args, outcomeSchema)); return;
       }
       if (path === '/api/delete') {
         const args = z.object({ code: codeSchema, expectedVersion: versionSchema, confirmation: z.literal('DELETE') }).strict().parse(input);
+        hostOnly(args.code);
         json(200, await connection.call('delete_room', args, z.object({ deleted: z.literal(true) }).strict())); return;
       }
       if (path === '/api/commentary') {
         const args = z.object({ code: codeSchema }).strict().parse(input);
+        hostOnly(args.code);
         if (!agent) throw new RaceError('AI_OFF', 'AI commentary is off. The live game still uses real MCP.');
         json(200, await agent(args.code)); return;
       }
@@ -140,6 +166,7 @@ if (import.meta.main) {
   const key = process.env.GEMINI_API_KEY;
   try {
     const server = createRaceServer(connection, { ...(publicOrigin ? { publicOrigin } : {}),
+      hostMode: z.enum(['password', 'browser']).parse(process.env.HOST_MODE ?? 'password'),
       ...(process.env.HOST_PASSWORD ? { password: process.env.HOST_PASSWORD } : {}) },
     key ? createCommentator(connection, geminiProvider(key, process.env.GEMINI_MODEL)) : undefined);
     const port = z.coerce.number().int().min(1024).max(65535).parse(process.env.PORT ?? 18769);

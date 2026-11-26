@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const guest = /^\/r\/([A-F0-9]{8})$/.exec(location.pathname);
 let code = guest?.[1] ?? new URLSearchParams(location.search).get('room') ?? localStorage.getItem('nr_host_room'), state, meta, etag, busy = false, pending, returnFocus;
-let serverTime = 0, receivedAt = 0;
+let serverTime = 0, receivedAt = 0, ownedRoom;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let shownQuestion, shownPodium;
 const show = (id, visible) => { $(id).hidden = !visible; };
@@ -16,6 +16,7 @@ async function api(path, data) {
     throw new Error(value.error ?? `Request failed (${response.status}).`);
   }
   if (value.trace) $('trace').textContent = JSON.stringify(value.trace, null, 2);
+  if (value.result?.room && value.isHost !== undefined) ownedRoom = value.isHost ? value.result.room.code : undefined;
   if (value.result?.room) accept(value.result);
   return value;
 }
@@ -167,10 +168,11 @@ function render() {
   if (!meta) return;
   $('mode').textContent = `REAL MCP / AI ${meta.ai ? 'ON' : 'OFF'}`;
   show('login', !guest && !meta.authenticated);
-  show('create', !guest && meta.authenticated && !state);
+  show('create', !guest && meta.authenticated && (!state || (meta.hostMode === 'browser' && ownedRoom !== state.room.code)));
   show('game', Boolean(state));
   if (!state) { shownQuestion = undefined; shownPodium = undefined; return; }
-  const room = state.room, host = !guest && meta.authenticated;
+  const room = state.room, host = !guest && meta.authenticated && (meta.hostMode !== 'browser' || ownedRoom === room.code);
+  show('host-notice', !guest && meta.hostMode === 'browser' && !host);
   $('room-title').textContent = `Room ${room.code} / Round ${room.round || 1}`;
   $('count').textContent = `${room.players.length} / ${room.capacity} racers`;
   const quiz = room.mode === 'quiz';
@@ -224,6 +226,7 @@ async function refresh(force = false) {
     throw new Error(value.error ?? 'Room read failed.');
   }
   if (state?.room.code === value.result.room.code && value.result.room.version < state.room.version) return;
+  ownedRoom = value.isHost ? value.result.room.code : undefined;
   accept(value.result); etag = response.headers.get('etag'); render();
 }
 function review(word, playerId) {

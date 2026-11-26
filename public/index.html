@@ -1,20 +1,21 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Name Race | Join. Watch. Cheer.</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teaching AI Coding Agents to Build It Right the First Time | Quiz</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
 <body>
 <main>
-  <header><span class="eyebrow">BUILD WITH AI / LIVE WORKSHOP</span><span id="mode" class="pill">Connecting...</span>
-    <h1>Your name.<br><em>Your answers.</em></h1><p>Five questions. Colored cars. A podium earned by you.</p>
-    <nav aria-label="Workshop concepts"><span>Vibe coding</span><span>Skills</span><span>MCP</span><span>Human control</span></nav>
+  <header><span class="eyebrow">CONFERENCE TALK / LIVE QUIZ</span><span id="mode" class="pill">Connecting...</span>
+    <h1 class="talk-title">Teaching AI Coding Agents<br>to Build It Right<br><em>the First Time.</em></h1><p>Five questions from the talk. Colored cars. A podium earned by you.</p>
+    <nav aria-label="Talk concepts"><span>Clear briefs</span><span>Skills</span><span>MCP</span><span>Verification</span></nav>
   </header>
   <p id="error" role="alert" hidden></p>
   <section id="login" class="card" hidden><h2>Host login</h2><p>The host password stays private. Participants do not need it.</p>
     <form id="login-form"><label for="password">Host password</label><input id="password" type="password" autocomplete="current-password" required><button>Unlock host controls</button></form>
   </section>
-  <section id="create" class="card" hidden><h2>Ready for the room?</h2><p>Up to 120 nicknames. Five workshop questions. Correct answers move your car; faster correct answers break score ties.</p><button id="create-room">Create race room</button></section>
+  <section id="create" class="card" hidden><h2>Ready for the room?</h2><p>Create a room to host it in this browser. Up to 120 nicknames. Five talk questions. Correct answers move your car; faster correct answers break score ties.</p><button id="create-room">Create race room</button></section>
   <div id="game" hidden>
+    <p id="host-notice" role="status" hidden>This browser does not own this room. Create a fresh room above to host without a password. Keep using the same browser; clearing its cookies removes host access.</p>
     <section id="invite-card" class="card invite" hidden><div><span class="eyebrow">01 / INVITE THE AUDIENCE</span><h2>Scan. Join. Cheer.</h2>
-      <p>No account, email or real name needed.</p><p class="small">Share this QR code. Never share your host password.</p></div>
+      <p>No account, email or real name needed.</p><p class="small">Share this QR code. Keep this host tab in the browser that created the room.</p></div>
       <img id="qr" alt="QR code: scan to join this race" width="240" height="240">
     </section>
     <section id="join-card" class="card" hidden><span class="eyebrow">01 / TAKE YOUR PLACE</span><h2>What's your nickname?</h2>

@@ -2,6 +2,27 @@
 
 ## Current five-question quiz
 
+### Talk title and password-free browser hosting
+
+- The visible heading and browser title now use the conference talk title.
+  The old Build with AI banner is replaced by Conference Talk / Live Quiz.
+- With `HOST_MODE=browser`, anyone can create a room without login. Only its
+  creator's room-scoped, signed HttpOnly cookie authorizes host actions.
+  Public deployment adds Secure; SameSite=Strict and Origin checks remain.
+  The existing private server secret signs cookies and is never entered in the UI.
+- All **12 tests** pass, including forged/cross-room cookie rejection,
+  participant control/delete denial, owner-aware read caching, ownership after
+  broker reconnect, five-question scoring and legacy password-mode behavior.
+- A local browser rehearsal confirmed no login, creator controls after reload,
+  guest controls hidden, one-click advancement and no horizontal overflow at
+  375, 768 and 1440 px.
+- The full release is deployed and browser hosting enabled on the existing app.
+  Live checks verified exact title/UI assets, Secure creator cookies, QR joining,
+  denial of another browser's controls, all five questions and the final winner.
+  All synthetic rooms were deleted and confirmed absent with HTTP 404.
+- Existing password-mode rooms are not claimed automatically. Create a fresh
+  room and keep the creator's browser/cookies for the session.
+
 ### Conference talk questions (26 November 2026)
 
 - The five questions now follow **Teaching AI Coding Agents to Build It Right
