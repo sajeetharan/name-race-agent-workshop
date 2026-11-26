@@ -42,9 +42,11 @@ rooms have no creator cookie and cannot be claimed by arbitrary visitors.
 Never claim a deployment works from an upload response alone.
 For the quiz, verify START, one phone answer, one-click close/advance with the
 leaderboard and previous result visible, and the final
-named podium after closing question five. The release reads previous room files;
+named podium after closing question three (300 points maximum). The release reads previous room files;
 waiting rooms upgrade at START, while finished legacy rooms upgrade at RESET.
 Committed nicknames and quiz answers remain outside the deployment directory.
+Existing five-question rounds finish using their original definitions; RESET
+or START from a waiting room upgrades to the three-question quiz.
 
 ## Stop the demo
 

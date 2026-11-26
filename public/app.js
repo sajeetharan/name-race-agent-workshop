@@ -64,7 +64,7 @@ function updateTracks(id, players) {
     const card = existing.get(player.id) ?? track(player);
     existing.delete(player.id);
     card.querySelector('.racer-label').textContent = state.room.mode === 'quiz'
-      ? `${player.label} / ${player.correctAnswers}/5 correct / ${player.score} points${state.room.phase === 'waiting' ? '' : ` / rank ${player.rank} / ${seconds(player.answerTimeMs)}`}`
+      ? `${player.label} / ${player.correctAnswers}/${state.room.questionTotal} correct / ${player.score} points${state.room.phase === 'waiting' ? '' : ` / rank ${player.rank} / ${seconds(player.answerTimeMs)}`}`
       : player.label;
     container.append(card);
   }
@@ -77,7 +77,7 @@ function draw() {
   document.querySelectorAll('.racer').forEach(card => {
     const player = room.players.find(p => p.id === card.dataset.player);
     if (!player) return;
-    let value = room.mode === 'quiz' ? player.correctAnswers * 20
+    let value = room.mode === 'quiz' ? player.correctAnswers / room.questionTotal * 100
       : player.durationMs ? Math.max(0, Math.min(100, elapsed / player.durationMs * 100)) : 0;
     if (room.mode === 'legacy' && reduced.matches) value = room.phase === 'finished' ? 100 : 0;
     if (room.phase === 'waiting') value = 0;
@@ -115,7 +115,7 @@ function renderQuestion(host, room) {
   }
   const feedback = question.closed ? state.answer
     ? state.answer.correct ? 'Correct! Your car moves forward. +100 points.' : 'Not this time. No points for this answer.'
-    : host ? question.number === 5 ? 'Quiz finished. Show the final leaderboard and podium.' : 'Answers are closed. Explain the result, then open the next question.' : 'No answer was saved. No points for this question.'
+    : host ? question.number === question.total ? 'Quiz finished. Show the final leaderboard and podium.' : 'Answers are closed. Explain the result, then open the next question.' : 'No answer was saved. No points for this question.'
     : state.answer ? `Answer ${'ABCD'[state.answer.choice]} saved. Wait for the host to reveal the result.`
       : host ? 'Participants answer on their phones. Close answers when you are ready.'
         : state.you ? 'Your choice is final after you tap. Pick one answer.'
@@ -129,10 +129,10 @@ function renderQuestion(host, room) {
   show('question-controls', host && room.phase === 'running');
   $('question-controls').setAttribute('aria-busy', String(busy));
   $('close-question').disabled = busy || question.closed;
-  $('close-question').textContent = question.number === 5 ? 'Close question & show podium' : 'Close & open next question';
-  show('next-question', question.closed && question.number < 5);
-  $('next-question').disabled = busy || !question.closed || question.number === 5;
-  $('next-question').textContent = `Open question ${Math.min(5, question.number + 1)}`;
+  $('close-question').textContent = question.number === question.total ? 'Close question & show podium' : 'Close & open next question';
+  show('next-question', question.closed && question.number < question.total);
+  $('next-question').disabled = busy || !question.closed || question.number === question.total;
+  $('next-question').textContent = `Open question ${Math.min(question.total, question.number + 1)}`;
 }
 function renderLeaderboard(room, players) {
   show('leaderboard-section', room.mode === 'quiz' && room.phase !== 'waiting');
@@ -157,7 +157,7 @@ function renderPodium(room, players) {
     const place = document.createElement('article'); place.className = 'podium-place'; place.dataset.slot = index; place.dataset.rank = player.rank;
     const rank = document.createElement('strong'); rank.className = 'podium-rank'; rank.textContent = `#${player.rank}`;
     const name = document.createElement('h3'); name.textContent = player.name;
-    const score = document.createElement('p'); score.textContent = `${player.score} points / ${player.correctAnswers}/5 correct`;
+    const score = document.createElement('p'); score.textContent = `${player.score} points / ${player.correctAnswers}/${room.questionTotal} correct`;
     const time = document.createElement('p'); time.className = 'small'; time.textContent = `${seconds(player.answerTimeMs)} total correct-answer time`;
     place.append(rank, car(player.colorHue), name, score, time); return place;
   }));
@@ -176,13 +176,13 @@ function render() {
   $('room-title').textContent = `Room ${room.code} / Round ${room.round || 1}`;
   $('count').textContent = `${room.players.length} / ${room.capacity} racers`;
   const quiz = room.mode === 'quiz';
-  say('status', room.phase === 'waiting' ? 'The room is open. Pick a nickname. The host will start five questions.'
+  say('status', room.phase === 'waiting' ? `The room is open. Pick a nickname. The host will start ${room.questionTotal} questions.`
     : quiz ? room.phase === 'finished' ? 'The quiz is finished! Meet the top racers on the podium.'
       : `Question ${room.question?.number} is ${room.question?.closed ? 'closed. The host will open the next question.' : 'open. Answer on your phone.'}`
       : room.phase === 'running' ? 'This previous random race is running. Reset after it finishes to use the quiz.' : 'The previous race finished. Reset to use the quiz.');
   $('rules').textContent = quiz || room.phase === 'waiting'
     ? 'Ranking uses correct answers first, then total time for correct answers. Time is recorded by the server and includes network and polling delay. Exact score/time ties share a rank.'
-    : 'This previous room uses a random finish order. Reset keeps the nicknames and upgrades it to the five-question quiz.';
+    : 'This previous room uses a random finish order. Reset keeps the nicknames and upgrades it to the three-question quiz.';
   show('invite-card', host && room.phase === 'waiting');
   const qrPath = `/api/qr/${room.code}`; if (host && $('qr').getAttribute('src') !== qrPath) $('qr').src = qrPath;
   show('join-card', Boolean(guest && !state.you && room.phase === 'waiting'));
@@ -233,7 +233,7 @@ function review(word, playerId) {
   pending = { word, playerId, version: state.room.controlVersion };
   returnFocus = document.activeElement;
   $('required-word').textContent = word; $('confirmation').value = '';
-  $('review-title').textContent = word === 'START' ? 'Start the five-question quiz?' : word === 'CLOSE' ? 'Close answers and reveal the result?'
+  $('review-title').textContent = word === 'START' ? 'Start the three-question quiz?' : word === 'CLOSE' ? 'Close answers and reveal the result?'
     : word === 'NEXT' ? 'Open the next question?' : word === 'DELETE' ? 'Delete this room and its nicknames?' : word === 'REMOVE' ? 'Remove this entry?' : 'Open the next round?';
   $('review-copy').textContent = word === 'START' ? `${state.room.players.length} ${state.room.players.length === 1 ? 'racer' : 'racers'}. Correct answers earn points. Faster correct answers break score ties. Joining closes.`
     : word === 'CLOSE' ? `${state.room.question.answerCount} / ${state.room.players.length} answered question ${state.room.question.number}. Unanswered entries get zero points. Late answers will be rejected.`

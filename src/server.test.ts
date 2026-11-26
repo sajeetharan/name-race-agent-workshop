@@ -88,7 +88,7 @@ test('separate guest/host flows enforce login, consent, origin, source isolation
       advanced = await response.json();
     }
     assert.equal(advanced.result.room.phase, 'finished');
-    assert.equal(advanced.result.room.players[0].score, 400);
+    assert.equal(advanced.result.room.players[0].score, 200);
     assert.equal(advanced.result.room.winnerId, first.result.you);
     assert.equal((await post('/api/join', { code, name: 'Late Racer', consent: true })).status, 409);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await connection.close(); await rm(dir, { recursive: true, force: true }); }
@@ -163,7 +163,7 @@ test('password-free hosting scopes signed creator cookies to one room and surviv
       assert.equal(advanced.status, 200); current = await advanced.json();
     }
     assert.equal(current.result.room.phase, 'finished');
-    assert.equal(current.result.room.players[0].score, 500);
+    assert.equal(current.result.room.players[0].score, 300);
     assert.equal((await post('/api/delete', { code, expectedVersion: current.result.room.controlVersion,
       confirmation: 'DELETE' }, ownerCookie)).status, 200);
     assert.equal((await fetch(`${origin}/api/room/${code}`)).status, 404);

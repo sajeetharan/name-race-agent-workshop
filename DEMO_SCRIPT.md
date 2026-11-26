@@ -1,6 +1,6 @@
 # Talk recap: Teaching AI Coding Agents to Build It Right the First Time
 
-An optional 3-4 minute quiz for the 30-minute session, including Q&A.
+An optional 2-3 minute quiz for the 30-minute session, including Q&A.
 Keep the talk's hands-up opening poll and live-coding demo separate.
 Use this recap only if time allows; preserve time for audience questions.
 
@@ -12,10 +12,10 @@ The quiz needs no model key. Review the entries and type START.
 Keep the creator's browser and cookies throughout the quiz; another browser
 cannot control this room.
 
-"Five quick questions about teaching coding agents. Correct answers move your
+"Three quick questions about teaching coding agents. Correct answers move your
 car. Your answers decide the result, not luck or AI."
 
-## Five questions
+## Three questions
 
 Allow roughly 20-30 seconds per question. Read the question, let participants
 answer on their phones, then click **Close & open next question** once.
@@ -28,20 +28,12 @@ previous answer and explanation remain visible.
 2. **Make expertise reusable.**
    "A Skill needs triggers, non-triggers, steps, exceptions and checks.
    More guidance is not automatically better. Load relevant detail and evaluate it."
-3. **Ground the agent with MCP.**
-   "Skills explain how to work. Read-only MCP tools inspect the actual session
-   context and lookup contract. Tools do not grant permissions, and their
-   output is not trusted instructions."
-4. **Use the right lookup.**
-   "If the complete Cosmos DB partition key and ID are known, point-read the
-   exact session with the existing store/client. Unknown options still need
-   scoped search. Return public fields only."
-5. **Prove the result.**
+3. **Prove the result.**
    "A green build is not enough. Review behavior, the exact operation, tests
    and traces. A missing session must not become an invented result.
    One successful demo does not prove that a Skill caused the improvement."
 
-After question five, click **Close question & show podium**.
+After question three, click **Close question & show podium**.
 
 ## Podium and takeaway
 

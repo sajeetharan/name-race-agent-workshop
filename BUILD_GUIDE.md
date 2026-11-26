@@ -2,7 +2,7 @@
 
 1. **Write the brief.**
    "Build a live Name Race. Phones join by QR code and nickname. Up to 120 entries.
-   Use five workshop questions. The host opens and closes each question.
+   Use three talk questions for new rounds. The host opens and closes each question.
    Correct answers move colored cars. Rank by score, then correct-answer time.
    Announce the top three names on a podium. Do not send names to AI."
 2. **Review the plan.**

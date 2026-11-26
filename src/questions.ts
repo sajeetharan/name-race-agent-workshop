@@ -1,4 +1,5 @@
-export const questions = [
+// Existing five-question rooms keep their original definitions until RESET.
+export const fiveQuestions = [
   {
     prompt: 'What should a coding agent know before it starts building?',
     options: ['Only which language to use', 'The outcome, constraints and acceptance checks', 'That every generated answer is correct', 'That tests can wait until after shipping'],
@@ -30,3 +31,5 @@ export const questions = [
     explanation: 'Review the diff, tests and traces: correct stored facts, public fields, one exact lookup and no invented missing session. Compare repeated guided and unguided trials to evaluate a Skill.',
   },
 ] as const;
+
+export const questions = [fiveQuestions[0], fiveQuestions[1], fiveQuestions[4]] as const;

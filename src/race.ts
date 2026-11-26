@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { questions } from './questions.ts';
+import { fiveQuestions, questions } from './questions.ts';
 
 export class RaceError extends Error {
   readonly code: string;
@@ -30,6 +30,7 @@ const savedSchema = z.object({
   phase: z.enum(['waiting', 'running', 'finished']), startedAt: z.number().nullable(),
   expiresAt: z.number(), winnerId: z.uuid().nullable(), nextLabel: z.number().int().positive(),
   mode: z.enum(['legacy', 'quiz']).default('legacy'),
+  questionTotal: z.union([z.literal(3), z.literal(5)]).default(5),
   controlVersion: versionSchema.optional(),
   questionIndex: z.number().int().min(-1).max(4).default(-1),
   questionState: z.enum(['idle', 'open', 'closed']).default('idle'),
@@ -37,6 +38,7 @@ const savedSchema = z.object({
   players: z.array(savedPlayerSchema.extend({ keyHash: keySchema })).max(120),
 }).strict();
 type SavedRoom = z.infer<typeof savedSchema>;
+const roomQuestions = (room: SavedRoom) => room.questionTotal === 5 ? fiveQuestions : questions;
 const playerSchema = savedPlayerSchema.omit({ answers: true }).extend({
   colorHue: z.number().int().min(0).max(359),
   score: z.number().int().min(0).max(500), correctAnswers: z.number().int().min(0).max(5),
@@ -46,11 +48,12 @@ const playerSchema = savedPlayerSchema.omit({ answers: true }).extend({
 export const roomSchema = z.object({
   code: codeSchema, version: versionSchema, round: z.number().int().nonnegative(),
   controlVersion: versionSchema, mode: z.enum(['legacy', 'quiz']),
+  questionTotal: z.union([z.literal(3), z.literal(5)]),
   phase: z.enum(['waiting', 'running', 'finished']), startedAt: z.number().nullable(),
   expiresAt: z.number(), serverNow: z.number(), winnerId: z.uuid().nullable(),
   players: z.array(playerSchema).max(120), capacity: z.literal(120),
   question: z.object({
-    index: questionIndexSchema, number: z.number().int().min(1).max(5), total: z.literal(5),
+    index: questionIndexSchema, number: z.number().int().min(1).max(5), total: z.union([z.literal(3), z.literal(5)]),
     prompt: z.string(), options: z.array(z.string()).length(4),
     openedAt: z.number(), closed: z.boolean(), answerCount: z.number().int().min(0).max(120),
     correctChoice: choiceSchema.nullable(), explanation: z.string().nullable(),
@@ -158,18 +161,20 @@ export class RaceStore {
       player.rank = previous && previous.score === player.score && previous.answerTimeMs === player.answerTimeMs
         ? previous.rank : index + 1;
     });
-    const definition = questions[room.questionIndex];
-    const previous = room.mode === 'quiz' ? questions[room.questionIndex - 1] : undefined;
+    const definitions = roomQuestions(room);
+    const definition = definitions[room.questionIndex];
+    const previous = room.mode === 'quiz' ? definitions[room.questionIndex - 1] : undefined;
     const own = key ? room.players.find(p => p.keyHash === hash(key)) : undefined;
     const answer = own?.answers.find(a => a.questionIndex === room.questionIndex);
     return { room: {
       code: room.code, version: room.version + Number(finished), round: room.round,
       controlVersion: (room.controlVersion ?? room.version) + Number(finished), mode: room.mode,
+      questionTotal: room.questionTotal,
       phase: finished ? 'finished' : room.phase, startedAt: room.startedAt, expiresAt: room.expiresAt,
       serverNow: this.now(), winnerId: finished || room.phase === 'finished' ? room.winnerId : null, capacity: 120,
       players,
       question: room.mode === 'quiz' && definition && room.questionOpenedAt !== null ? {
-        index: room.questionIndex, number: room.questionIndex + 1, total: 5, prompt: definition.prompt,
+        index: room.questionIndex, number: room.questionIndex + 1, total: room.questionTotal, prompt: definition.prompt,
         options: [...definition.options], openedAt: room.questionOpenedAt,
         closed: room.questionState === 'closed', answerCount: players.filter(p => p.answered).length,
         correctChoice: room.questionState === 'closed' ? definition.correctChoice : null,
@@ -188,7 +193,7 @@ export class RaceStore {
       if (existing) throw new RaceError('COLLISION', 'Room code collision. Create a new room.');
       const room: SavedRoom = { code, version: 1, round: 0, phase: 'waiting', startedAt: null,
         expiresAt: this.now() + 2 * 60 * 60 * 1000, winnerId: null, nextLabel: 1, players: [],
-        mode: 'quiz', controlVersion: 1, questionIndex: -1, questionState: 'idle', questionOpenedAt: null };
+        mode: 'quiz', questionTotal: questions.length, controlVersion: 1, questionIndex: -1, questionState: 'idle', questionOpenedAt: null };
       return { room, value: this.view(room) };
     });
   }
@@ -228,7 +233,7 @@ export class RaceStore {
       if (room.phase !== 'running' || room.questionState !== 'open' || room.questionIndex !== index || room.questionOpenedAt === null) {
         throw new RaceError('QUESTION_CLOSED', 'This question is not open. Wait for the host.');
       }
-      const question = questions[index]; if (!question) throw new Error('Missing quiz question.');
+      const question = roomQuestions(room)[index]; if (!question) throw new Error('Missing quiz question.');
       if (!Number.isFinite(receivedAt) || receivedAt < room.questionOpenedAt || receivedAt > this.now()) {
         throw new RaceError('ANSWER_TIME', 'The answer is outside this question time. Read the current question again.');
       }
@@ -244,13 +249,13 @@ export class RaceStore {
       if (version !== view.room.controlVersion) throw new RaceError('STALE', 'The room changed. Read it and review again.');
       if (action === 'START') {
         if (view.room.phase !== 'waiting' || room.players.length < 1) throw new RaceError('START', 'Wait for at least one racer in an open room.');
-        room.mode = 'quiz'; room.questionIndex = 0; room.questionState = 'open'; room.questionOpenedAt = this.now();
+        room.mode = 'quiz'; room.questionTotal = questions.length; room.questionIndex = 0; room.questionState = 'open'; room.questionOpenedAt = this.now();
         room.players.forEach(p => { p.answers = []; p.durationMs = null; });
         room.winnerId = null; room.startedAt = this.now(); room.phase = 'running'; room.round++;
       } else if (action === 'CLOSE' || action === 'CLOSE_NEXT') {
         if (room.mode !== 'quiz' || room.phase !== 'running' || room.questionState !== 'open') throw new RaceError('CLOSE', 'Open a question before closing answers.');
         room.questionState = 'closed';
-        if (room.questionIndex === questions.length - 1) {
+        if (room.questionIndex === room.questionTotal - 1) {
           room.phase = 'finished';
           const top = [...this.view(room).room.players].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))[0];
           room.winnerId = top && top.score > 0 ? top.id : null;
@@ -258,13 +263,13 @@ export class RaceStore {
           room.questionIndex++; room.questionState = 'open'; room.questionOpenedAt = this.now();
         }
       } else if (action === 'NEXT') {
-        if (room.mode !== 'quiz' || room.phase !== 'running' || room.questionState !== 'closed' || room.questionIndex >= questions.length - 1) {
+        if (room.mode !== 'quiz' || room.phase !== 'running' || room.questionState !== 'closed' || room.questionIndex >= room.questionTotal - 1) {
           throw new RaceError('NEXT', 'Close this question before opening the next one.');
         }
         room.questionIndex++; room.questionState = 'open'; room.questionOpenedAt = this.now();
       } else if (action === 'RESET') {
         if (view.room.phase !== 'finished') throw new RaceError('RESET', 'Finish this race before opening the next round.');
-        room.mode = 'quiz'; room.phase = 'waiting'; room.startedAt = null; room.winnerId = null;
+        room.mode = 'quiz'; room.questionTotal = questions.length; room.phase = 'waiting'; room.startedAt = null; room.winnerId = null;
         room.questionIndex = -1; room.questionState = 'idle'; room.questionOpenedAt = null;
         room.players.forEach(p => { p.durationMs = null; p.answers = []; });
       } else {

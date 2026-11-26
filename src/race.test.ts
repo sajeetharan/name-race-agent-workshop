@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connectRace } from './connection.ts';
 import { FileRepository, MemoryRepository, outcomeSchema, RaceStore, summarySchema } from './race.ts';
-import { questions } from './questions.ts';
+import { fiveQuestions, questions } from './questions.ts';
 const key = (n: number) => n.toString(16).padStart(64, '0');
 
 test('120 concurrent registrations have unique entries; the 121st fails without mutation', async () => {
@@ -20,7 +20,7 @@ test('120 concurrent registrations have unique entries; the 121st fails without 
   assert.equal(same.room.version, state.room.version);
   assert.ok(same.you); assert.ok(!JSON.stringify(same).includes('keyHash'));
 });
-test('empty rooms cannot start; one racer can answer all five host-paced questions', async () => {
+test('empty rooms cannot start; one racer can answer all three host-paced questions', async () => {
   let now = 100000;
   const store = new RaceStore(new MemoryRepository(), () => now);
   let { room } = await store.create();
@@ -36,16 +36,16 @@ test('empty rooms cannot start; one racer can answer all five host-paced questio
     assert.equal((await store.read(room.code)).room.players[0]?.score, index * 100);
     room = (await store.control(room.code, room.controlVersion, 'CLOSE')).room;
     assert.equal(room.players[0]?.score, (index + 1) * 100);
-    if (index < 4) room = (await store.control(room.code, room.controlVersion, 'NEXT')).room;
+    if (index < questions.length - 1) room = (await store.control(room.code, room.controlVersion, 'NEXT')).room;
   }
-  assert.equal(room.phase, 'finished'); assert.equal(room.players[0]?.answerTimeMs, 1250);
+  assert.equal(room.phase, 'finished'); assert.equal(room.players[0]?.answerTimeMs, 750);
   assert.equal(room.winnerId, joined.you);
   room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
   assert.equal(room.phase, 'waiting');
   assert.equal(room.players.length, 1);
   assert.equal(room.players[0]?.durationMs, null);
   assert.equal(room.players[0]?.score, 0); assert.equal(room.question, null);
-  await assert.rejects(store.answer(room.code, key(1), 1, 4, questions[4].correctChoice), /not open/);
+  await assert.rejects(store.answer(room.code, key(1), 1, 2, questions[2].correctChoice), /not open/);
 });
 test('quiz scoring, speed ties, private answers and question boundaries are code owned', async () => {
   let now = 100000;
@@ -68,7 +68,7 @@ test('quiz scoring, speed ties, private answers and question boundaries are code
     const start = now;
     const correct = questions[index]!.correctChoice;
     now = start + 50;
-    await store.answer(room.code, key(3), room.round, index, index === 4 ? (correct + 1) % 4 : correct);
+    await store.answer(room.code, key(3), room.round, index, index === questions.length - 1 ? (correct + 1) % 4 : correct);
     now = start + 100;
     const answer = await store.answer(room.code, key(2), room.round, index, correct);
     await store.answer(room.code, key(4), room.round, index, correct);
@@ -82,7 +82,7 @@ test('quiz scoring, speed ties, private answers and question boundaries are code
     assert.equal((await store.read(room.code, key(2))).answer?.correct, true);
     assert.equal((await store.read(room.code)).answer, null);
     await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE'), /Open a question/);
-    if (index < 4) {
+    if (index < questions.length - 1) {
       room = (await store.control(room.code, room.controlVersion, 'NEXT')).room;
       await assert.rejects(store.answer(room.code, key(1), room.round + 1, index + 1, 0), /round changed/i);
     }
@@ -92,8 +92,8 @@ test('quiz scoring, speed ties, private answers and question boundaries are code
   const tie = room.players.find(p => p.name === 'Tie Bird')!;
   const slow = room.players.find(p => p.name === 'नेपाल')!;
   const fastWrong = room.players.find(p => p.name === 'Fast Cat')!;
-  assert.equal(panda.score, 500); assert.equal(panda.rank, 1); assert.equal(tie.rank, 1);
-  assert.equal(slow.rank, 3); assert.equal(fastWrong.score, 400); assert.equal(fastWrong.rank, 4);
+  assert.equal(panda.score, 300); assert.equal(panda.rank, 1); assert.equal(tie.rank, 1);
+  assert.equal(slow.rank, 3); assert.equal(fastWrong.score, 200); assert.equal(fastWrong.rank, 4);
   assert.equal(new Set(room.players.map(p => p.colorHue)).size, 4);
   const winner = room.winnerId;
   assert.equal((await store.read(room.code)).room.winnerId, winner);
@@ -110,7 +110,11 @@ test('one host click closes and advances atomically, keeps next grades private a
   room = (await store.join(room.code, 'Late Bird', key(2), true)).room;
   await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE_NEXT'), /Open a question/);
   room = (await store.control(room.code, room.controlVersion, 'START')).room;
+  assert.equal(room.questionTotal, 3);
+  assert.equal(room.question?.total, 3);
   assert.equal(room.previousQuestion, null);
+  await assert.rejects(store.answer(room.code, key(2), room.round, 3, 0), /not open/);
+  await assert.rejects(store.answer(room.code, key(2), room.round, 4, 0), /not open/);
   for (let index = 0; index < questions.length; index++) {
     const version = room.controlVersion;
     now += 100;
@@ -139,14 +143,62 @@ test('one host click closes and advances atomically, keeps next grades private a
     }
   }
   assert.equal(room.phase, 'finished');
-  assert.equal(room.question?.number, 5);
+  assert.equal(room.question?.number, 3);
   assert.equal(room.question?.closed, true);
-  assert.equal(room.players[0]?.score, 500);
+  assert.equal(room.players[0]?.score, 300);
   assert.equal(room.winnerId, joined.you);
   await assert.rejects(store.control(room.code, room.controlVersion, 'CLOSE_NEXT'), /Open a question/);
+  await assert.rejects(store.control(room.code, room.controlVersion, 'NEXT'), /Close this question/);
+  assert.equal((await store.read(room.code)).room.controlVersion, room.controlVersion);
   room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
   assert.equal(room.previousQuestion, null);
   assert.equal(room.players[0]?.score, 0);
+});
+test('persisted five-question rounds finish with their original answers, then reset to three', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'name-race-five-question-'));
+  let now = 100000;
+  try {
+    let store = new RaceStore(new FileRepository(dir), () => now);
+    let { room } = await store.create();
+    room = (await store.join(room.code, 'Existing Panda', key(1), true)).room;
+    const path = join(dir, `${room.code}.json`);
+    const saved = JSON.parse(await readFile(path, 'utf8'));
+    delete saved.questionTotal;
+    Object.assign(saved, { phase: 'running', round: 1, questionIndex: 2, questionState: 'open',
+      startedAt: now, questionOpenedAt: now });
+    saved.players[0].answers = [0, 1].map(index => ({
+      questionIndex: index, choice: fiveQuestions[index]!.correctChoice, correct: true, elapsedMs: 100,
+    }));
+    await writeFile(path, JSON.stringify(saved));
+    for (let index = 2; index < fiveQuestions.length; index++) {
+      store = new RaceStore(new FileRepository(dir), () => now);
+      room = (await store.read(room.code)).room;
+      assert.equal(room.questionTotal, 5);
+      assert.equal(room.question?.total, 5);
+      assert.equal(room.question?.prompt, fiveQuestions[index]!.prompt);
+      now += 100;
+      await store.answer(room.code, key(1), room.round, index, fiveQuestions[index]!.correctChoice);
+      room = (await store.control(room.code, room.controlVersion, 'CLOSE_NEXT')).room;
+      assert.equal(room.phase, index === 4 ? 'finished' : 'running');
+    }
+    assert.equal(room.players[0]?.score, 500);
+    assert.ok(room.winnerId);
+    room = (await store.control(room.code, room.controlVersion, 'RESET')).room;
+    assert.equal(room.questionTotal, 3);
+    assert.equal(room.players[0]?.name, 'Existing Panda');
+    assert.equal(room.players[0]?.score, 0);
+    store = new RaceStore(new FileRepository(dir), () => now);
+    room = (await store.control(room.code, room.controlVersion, 'START')).room;
+    for (let index = 0; index < 3; index++) {
+      assert.equal(room.question?.total, 3);
+      assert.equal(room.question?.prompt, questions[index]!.prompt);
+      now += 100;
+      await store.answer(room.code, key(1), room.round, index, questions[index]!.correctChoice);
+      room = (await store.control(room.code, room.controlVersion, 'CLOSE_NEXT')).room;
+    }
+    assert.equal(room.phase, 'finished');
+    assert.equal(room.players[0]?.score, 300);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 test('file-backed MCP survives reconnect, serializes joins, hides proofs and enforces host authority', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'name-race-mcp-'));

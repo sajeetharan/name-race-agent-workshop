@@ -1,8 +1,25 @@
 # Validation and limits
 
-## Current five-question quiz
+## Current three-question quiz
 
-### Talk title and password-free browser hosting
+### Three-question recap
+
+- New rounds contain exactly three questions: briefs, reusable Skills and
+  verification. Closing question three ends the round with a 300-point maximum.
+- All **13 tests** pass, including no fourth/fifth question for new rounds,
+  score/time ties, host isolation, and persisted five-question rounds retaining
+  their old definitions until RESET upgrades them without losing nicknames.
+- Browser rehearsal verified QUESTION 1/3 through 3/3, one-click progression,
+  100/200/300-point standings, 33.33/66.67/100% car progress, and the final podium
+  immediately after question three. No further question controls remain.
+  Narrow/wide layouts and reduced-motion progress were checked.
+- The release is deployed to the existing HTTPS app. A live two-player check
+  verified exactly three questions, all options/explanations, private grades,
+  300/0-point final standings, no fourth question, and RESET retaining names.
+  QR-only joining and password-free owner controls remain working.
+  Synthetic live and browser rehearsal rooms were deleted.
+
+### Earlier talk title and password-free browser hosting
 
 - The visible heading and browser title now use the conference talk title.
   The old Build with AI banner is replaced by Conference Talk / Live Quiz.
@@ -23,7 +40,7 @@
 - Existing password-mode rooms are not claimed automatically. Create a fresh
   room and keep the creator's browser/cookies for the session.
 
-### Conference talk questions (26 November 2026)
+### Earlier five-question conference recap (26 November 2026)
 
 - The five questions now follow **Teaching AI Coding Agents to Build It Right
   the First Time**: briefs, scoped Skills, MCP context, exact session lookups

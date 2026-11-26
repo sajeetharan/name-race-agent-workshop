@@ -2,7 +2,7 @@
 
 A small live quiz for **Teaching AI Coding Agents to Build It Right the First Time**
 (30 minutes, including Q&A). Participants scan a QR code, enter a nickname,
-and answer five questions grounded in the talk. Correct answers move their
+and answer three questions grounded in the talk. Correct answers move their
 colored cars; the top three racers appear on a named podium.
 **120 entries per room. No ADK or model key needed.**
 
@@ -36,16 +36,15 @@ Do not expose that local configuration through a tunnel.
 7. Participants choose one answer on their phones. Each answer is final.
 8. Click **Close & open next question** once. No typed CLOSE or NEXT is needed.
    The server closes answers and opens the next question atomically. Correct answers earn
-   100 points and move cars 20% along the track. Unanswered or wrong answers earn zero.
+   100 points and move cars one third of the track. Unanswered or wrong answers earn zero.
 9. Repeat for each question. The leaderboard stays visible beside the question on
    wide screens (below it on phones), with all racers ranked. The previous answer
    and explanation remain visible while the next question is open.
-10. **Close question & show podium** ends question five and announces the top three names, scores, times and colored cars.
+10. **Close question & show podium** ends question three and announces the top three names, scores, times and colored cars. The maximum score is 300 points.
 11. Type **RESET** to keep nicknames but clear answers and scores for another round.
 12. Type **DELETE** after the demo to remove the room and its nicknames.
 
-The five topics are clear briefs, scoped Skills, MCP-grounded context,
-exact Cosmos DB session lookups, and verification beyond a green build.
+The three topics are clear briefs, scoped Skills, and verification beyond a green build.
 The questions follow the conference talk's intent/context/acceptance framing
 and Conference Sidekick lookup demo. This quiz is an optional audience recap,
 not the talk's prepared hands-up opening poll or its live-coding application.
@@ -62,6 +61,8 @@ this is not verified real-person identity or a gambling system.
 One racer can test the full quiz alone, but must answer to earn points. Empty rooms cannot start.
 Previously saved waiting rooms upgrade when started. A previous random race can
 finish as before; RESET then upgrades it without removing nicknames.
+Existing five-question rounds keep their original questions and 500-point scoring
+until finished. RESET upgrades them to three questions without removing nicknames.
 
 ## Concepts you can show
 
