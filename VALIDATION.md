@@ -2,7 +2,21 @@
 
 ## Current five-question quiz
 
-### One-click host controls and Antigravity final question
+### Conference talk questions (26 November 2026)
+
+- The five questions now follow **Teaching AI Coding Agents to Build It Right
+  the First Time**: briefs, scoped Skills, MCP context, exact session lookups
+  and verification. The talk deck and its separate demo were read for alignment;
+  neither was modified.
+- Strict build, browser JavaScript syntax and all **11 tests** pass.
+- The compiled question module was deployed to the existing HTTPS app.
+  A temporary live two-player room verified every prompt, option, correct choice
+  and explanation against the local release, private grades before close,
+  one-click progression, 500/0-point standings and the final winner.
+- Health, QR joining, QR-only invitation and leaderboard controls remain working.
+  The synthetic room was deleted and its absence confirmed with HTTP 404.
+
+### Earlier one-click host controls and Antigravity final question
 
 - Strict build, browser JavaScript syntax and all **11 tests** pass on the
   current Node runtime.
@@ -16,7 +30,7 @@
 - Every question advanced with one host button click and no typed confirmation.
   The leaderboard reflected the submitted answer, the previous result stayed
   visible, and closing question five displayed the named podium.
-- The final question now asks about reviewing an Antigravity implementation
+- That release's final question asked about reviewing an Antigravity implementation
   plan before clicking Proceed.
 - The prebuilt release was deployed to the existing HTTPS app. Live checks
   verified health, released UI code, private host login, QR joining, all five

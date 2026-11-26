@@ -140,7 +140,6 @@ test('one host click closes and advances atomically, keeps next grades private a
   }
   assert.equal(room.phase, 'finished');
   assert.equal(room.question?.number, 5);
-  assert.match(room.question!.prompt, /Antigravity Plan mode/);
   assert.equal(room.question?.closed, true);
   assert.equal(room.players[0]?.score, 500);
   assert.equal(room.winnerId, joined.you);

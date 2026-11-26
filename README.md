@@ -1,7 +1,8 @@
 # Name Race: join, watch, cheer
 
-A small live Build with AI workshop. Participants scan a QR code, enter a nickname,
-and answer five easy-English workshop questions. Correct answers move their
+A small live quiz for **Teaching AI Coding Agents to Build It Right the First Time**
+(30 minutes, including Q&A). Participants scan a QR code, enter a nickname,
+and answer five questions grounded in the talk. Correct answers move their
 colored cars; the top three racers appear on a named podium.
 **120 entries per room. No ADK or model key needed.**
 
@@ -42,7 +43,11 @@ Do not expose that local configuration through a tunnel.
 11. Type **RESET** to keep nicknames but clear answers and scores for another round.
 12. Type **DELETE** after the demo to remove the room and its nicknames.
 
-The five topics are vibe coding, Antigravity, Skills, MCP and Antigravity Plan mode.
+The five topics are clear briefs, scoped Skills, MCP-grounded context,
+exact Cosmos DB session lookups, and verification beyond a green build.
+The questions follow the conference talk's intent/context/acceptance framing
+and Conference Sidekick lookup demo. This quiz is an optional audience recap,
+not the talk's prepared hands-up opening poll or its live-coding application.
 Ranking uses most correct answers first, then the lowest total time for correct
 answers. Times are recorded at the server HTTP adapter, not supplied by phones.
 They include network and polling delay, so this is not a proctored or abuse-proof exam.
